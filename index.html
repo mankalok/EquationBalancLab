@@ -1,0 +1,163 @@
+
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>趣味方程實驗室 - 索引頁</title>
+    <style>
+        @page {
+            size: A4 landscape;
+            margin: 0;
+        }
+        body {
+            margin: 0;
+            padding: 20px;
+            background-color: #e0f7fa;
+            font-family: 'Comic Sans MS', 'Chalkboard SE', 'Microsoft JhengHei', sans-serif;
+            text-align: center;
+            color: #2c3e50;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: #ffffff;
+            border-radius: 30px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            border: 8px solid #ffeb3b;
+        }
+        h1 {
+            font-size: 36pt;
+            color: #ff5722;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px #ffe0b2;
+        }
+        p.subtitle {
+            font-size: 18pt;
+            color: #4caf50;
+            margin-bottom: 30px;
+            font-weight: bold;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+        }
+        .btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            padding: 20px;
+            border-radius: 25px;
+            transition: all 0.3s ease;
+            box-shadow: 0 6px 0 rgba(0,0,0,0.1);
+            cursor: pointer;
+            height: 180px;
+        }
+        .btn:active {
+            transform: translateY(4px);
+            box-shadow: 0 2px 0 rgba(0,0,0,0.1);
+        }
+        .num {
+            font-size: 18pt;
+            font-weight: bold;
+            background: rgba(255,255,255,0.5);
+            padding: 2px 12px;
+            border-radius: 15px;
+            margin-bottom: 10px;
+        }
+        .symbol {
+            font-size: 60pt;
+            line-height: 1;
+            margin: 5px 0;
+            font-weight: 900;
+        }
+        .text {
+            font-size: 14pt;
+            font-weight: bold;
+            margin-top: 5px;
+        }
+
+        /* 按鈕顏色樣式 */
+        .btn-1 { background-color: #ffadad; border: 4px solid #ff4d4d; color: #b71c1c; } /* 加 */
+        .btn-2 { background-color: #9bf6ff; border: 4px solid #00b4d8; color: #0077b6; } /* 減 */
+        .btn-3 { background-color: #caffbf; border: 4px solid #4caf50; color: #1b5e20; } /* 乘 */
+        .btn-4 { background-color: #ffd6a5; border: 4px solid #ff9800; color: #e65100; } /* 除 */
+        .btn-5 { background-color: #bdb2ff; border: 4px solid #673ab7; color: #311b92; } /* 乘加 */
+        .btn-6 { background-color: #ffc6ff; border: 4px solid #e91e63; color: #880e4f; } /* 乘減 */
+        .btn-7 { background-color: #a0c4ff; border: 4px solid #3f51b5; color: #1a237e; } /* 除加 */
+        .btn-8 { background-color: #fdffb6; border: 4px solid #fbc02d; color: #f57f17; } /* 除減 */
+
+        .footer {
+            margin-top: 30px;
+            font-size: 14pt;
+            color: #78909c;
+        }
+        .deco { font-size: 24pt; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1><span class="deco">🚀</span> 趣味方程實驗室 <span class="deco">🧪</span></h1>
+        <p class="subtitle">小朋友，選一個挑戰開始吧！</p>
+        
+        <div class="grid">
+            <!-- 1. 加 -->
+            <a href="EquationBalancLab1.html" class="btn btn-1">
+                <span class="num">1</span>
+                <span class="symbol">＋</span>
+                <span class="text">加法方程</span>
+            </a>
+            <!-- 2. 減 -->
+            <a href="EquationBalancLab2.html" class="btn btn-2">
+                <span class="num">2</span>
+                <span class="symbol">－</span>
+                <span class="text">減法方程</span>
+            </a>
+            <!-- 3. 乘 -->
+            <a href="EquationBalancLab3.html" class="btn btn-3">
+                <span class="num">3</span>
+                <span class="symbol">×</span>
+                <span class="text">乘法方程</span>
+            </a>
+            <!-- 4. 除 -->
+            <a href="EquationBalancLab4.html" class="btn btn-4">
+                <span class="num">4</span>
+                <span class="symbol">÷</span>
+                <span class="text">除法方程</span>
+            </a>
+            <!-- 5. 乘加 -->
+            <a href="EquationBalancLab5.html" class="btn btn-5">
+                <span class="num">5</span>
+                <span class="symbol">× ＋</span>
+                <span class="text">先乘後加</span>
+            </a>
+            <!-- 6. 乘減 -->
+            <a href="EquationBalancLab6.html" class="btn btn-6">
+                <span class="num">6</span>
+                <span class="symbol">× －</span>
+                <span class="text">先乘後減</span>
+            </a>
+            <!-- 7. 除加 -->
+            <a href="EquationBalancLab7.html" class="btn btn-7">
+                <span class="num">7</span>
+                <span class="symbol">÷ ＋</span>
+                <span class="text">先除後加</span>
+            </a>
+            <!-- 8. 除減 -->
+            <a href="EquationBalancLab8.html" class="btn btn-8">
+                <span class="num">8</span>
+                <span class="symbol">÷ －</span>
+                <span class="text">先除後減</span>
+            </a>
+        </div>
+        
+        <div class="footer">
+            🌟 提示：一部方程由 1-4 號按鈕開始，想挑戰更難的就選 5-8 號吧！
+        </div>
+    </div>
+</body>
+</html>

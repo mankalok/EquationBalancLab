@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>兩步方程：邏輯嚴謹版</title>
+    <style>
+        :root { 
+            --main-color: #3498db; --success-color: #2ecc71; --error-color: #e74c3c; 
+            --y-color: #f39c12; --item-n: #9b59b6; --font-main: "Microsoft JhengHei", sans-serif;
+        }
+        body { font-family: var(--font-main); background: #f8f9fa; display: flex; flex-direction: column; align-items: center; margin: 0; padding: 10px; }
+
+        /* 新增：右上角返回按鈕樣式 */
+        .back-to-index {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 10px 20px;
+            background-color: #2c3e50;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: bold;
+            z-index: 1000;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: background 0.3s;
+        }
+        .back-to-index:hover {
+            background-color: #34495e;
+        }
+
+        .eq-panel { 
+            background: white; padding: 25px; border-radius: 12px; 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05); width: 95%; max-width: 550px; 
+            margin-bottom: 15px;
+        }
+        .eq-row { 
+            display: flex; justify-content: center; align-items: center; 
+            font-size: 26px; font-weight: bold; min-height: 45px; margin: 5px 0;
+        }
+        .eq-left { flex: 1; text-align: right; padding-right: 15px; }
+        .eq-op { width: 40px; text-align: center; }
+        .eq-right { flex: 1; text-align: left; padding-left: 15px; }
+
+        .gray-text { color: #bdc3c7; }
+        .highlight-blue { color: var(--main-color); }
+        .highlight-green { color: var(--success-color); }
+
+        #stage { position: relative; width: 100%; max-width: 700px; height: 400px; display: flex; justify-content: center; margin-top: 10px; }
+        .pillar { position: absolute; bottom: 40px; width: 12px; height: 180px; background: #95a5a6; border-radius: 6px; }
+        .base { position: absolute; bottom: 30px; width: 120px; height: 10px; background: #2c3e50; border-radius: 5px; }
+        
+        .beam-wrap { 
+            position: absolute; top: 80px; width: 620px; 
+            transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1); 
+            transform-origin: center 5px; z-index: 2;
+        }
+        .beam { width: 100%; height: 8px; background: #bdc3c7; border-radius: 4px; display: flex; justify-content: space-between; }
+
+        .pan { 
+            width: 280px; background: rgba(255,255,255,0.98); border: 3px solid #34495e; 
+            border-top: none; border-radius: 0 0 15px 15px; padding: 10px; 
+            min-height: 260px; display: flex; flex-direction: column; 
+        }
+        
+        .y-pool { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; min-height: 65px; margin-bottom: 10px; }
+        .y-block { 
+            position: relative; width: 55px; height: 55px; background: var(--y-color); 
+            border-radius: 6px; display: flex; align-items: center; justify-content: center; 
+            font-size: 22px; color: white; font-weight: bold; cursor: grab;
+        }
+        
+        .gap-slot {
+            position: absolute; bottom: 3px; right: 3px; width: 22px; height: 22px; 
+            background: rgba(0,0,0,0.15); border: 1.5px dashed rgba(255,255,255,0.8); border-radius: 4px;
+            display: flex; flex-wrap: wrap; gap: 1px; padding: 1px; pointer-events: none;
+        }
+        .filled-dot { width: 9px; height: 9px; background: var(--item-n); border-radius: 1px; }
+
+        .baskets { border-top: 2px dashed #eee; padding-top: 10px; margin-top: auto; display: flex; flex-direction: column; gap: 6px; }
+        .slot-row { display: flex; align-items: center; gap: 8px; transition: 0.4s; }
+        .group-slot { 
+            flex-grow: 1; border: 2px dashed #ccc; border-radius: 8px; 
+            min-height: 42px; display: flex; flex-wrap: wrap; gap: 4px; padding: 4px; background: white;
+        }
+
+        .item { 
+            width: 26px; height: 26px; border-radius: 4px; display: flex; 
+            align-items: center; justify-content: center; color: white; 
+            font-weight: bold; cursor: grab; font-size: 14px; background: var(--item-n);
+        }
+
+        .controls { width: 95%; max-width: 600px; display: grid; grid-template-columns: 1fr 1.5fr 1fr; gap: 15px; margin-top: 20px; }
+        .tool-box { background: white; padding: 10px; border-radius: 12px; border: 1px solid #ddd; display: flex; flex-direction: column; align-items: center; }
+        .bin { background: #f1f2f6; border: 2px dashed #ced6e0; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #747d8c; font-size: 14px; }
+
+        #msg-bar { height: 45px; font-weight: bold; color: #2c3e50; font-size: 19px; text-align: center; margin: 10px 0; }
+        .btn-next { padding: 12px 30px; background: var(--success-color); color: white; border: none; border-radius: 8px; cursor: pointer; display: none; font-size: 18px; font-weight: bold; box-shadow: 0 4px 0 #27ae60; }
+        .fade-out { opacity: 0.15; transform: scale(0.95); pointer-events: none; }
+    </style>
+</head>
+<body>
+
+<a href="index.html" class="back-to-index">返回主頁</a>
+
+<div class="eq-panel">
+    <div class="eq-row gray-text">
+        <div class="eq-left" id="eq0-l">2Y - 3</div>
+        <div class="eq-op">=</div>
+        <div class="eq-right" id="eq0-r">11</div>
+    </div>
+    <div class="eq-row" id="eq-step1">
+        <div class="eq-left" id="eq1-l">2Y - 3</div>
+        <div class="eq-op" id="eq1-op">=</div>
+        <div class="eq-right" id="eq1-r">11</div>
+    </div>
+    <div class="eq-row highlight-blue" id="eq-step2" style="visibility: hidden;">
+        <div class="eq-left" id="eq2-l">2Y</div>
+        <div class="eq-op">=</div>
+        <div class="eq-right" id="eq2-r">14</div>
+    </div>
+    <div class="eq-row highlight-green" id="eq-step3" style="visibility: hidden;">
+        <div class="eq-left" id="eq3-l">Y</div>
+        <div class="eq-op">=</div>
+        <div class="eq-right" id="eq3-r">7</div>
+    </div>
+</div>
+
+<div id="msg-bar">提示：先填補 Y 的缺口，令天秤平衡！</div>
+<button id="nextBtn" class="btn-next" onclick="nextLevel()">進入下一題</button>
+
+<div id="stage">
+    <div class="base"></div><div class="pillar"></div>
+    <div class="beam-wrap" id="beam-wrap">
+        <div class="beam">
+            <div class="pan" id="pan-L" ondrop="handleDrop(event, 'L')" ondragover="allowDrop(event)">
+                <div class="y-pool" id="y-pool"></div>
+                <div class="baskets" id="b-L"></div>
+            </div>
+            <div class="pan" id="pan-R" ondrop="handleDrop(event, 'R')" ondragover="allowDrop(event)">
+                <div id="r-items" style="display:flex; flex-wrap:wrap; gap:4px; min-height:65px; justify-content:center;"></div>
+                <div class="baskets" id="b-R"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="controls">
+    <div class="tool-box">
+        <span style="font-size:12px; margin-bottom:5px; color:#666;">法碼(1)</span>
+        <div class="item" draggable="true" ondragstart="drag(event)" id="spawn-item">1</div>
+    </div>
+    <div class="bin" id="trash" ondrop="dropTrash(event)" ondragover="allowDrop(event)">🗑️ 移除</div>
+    <button onclick="reset()" style="cursor:pointer; background:#95a5a6; color:white; border:none; border-radius:8px; font-weight:bold;">重設</button>
+</div>
+
+<script>
+    const levels = [
+        { a: 2, b: 3, c: 11, ans: 7 },
+        { a: 3, b: 4, c: 8, ans: 4 }
+    ];
+    let cur = 0, addL = 0, addR = 0;
+
+    function init() {
+        const lv = levels[cur];
+        addL = 0; addR = 0;
+        
+        document.getElementById('eq0-l').innerText = `${lv.a}Y - ${lv.b}`;
+        document.getElementById('eq0-r').innerText = lv.c;
+        document.getElementById('eq1-l').innerText = `${lv.a}Y - ${lv.b}`;
+        document.getElementById('eq1-r').innerText = lv.c;
+        
+        document.getElementById('eq-step2').style.visibility = 'hidden';
+        document.getElementById('eq-step3').style.visibility = 'hidden';
+        document.getElementById('nextBtn').style.display = 'none';
+        document.getElementById('msg-bar').innerText = "提示：先填補 Y 的缺口，令天秤平衡！";
+
+        const yP = document.getElementById('y-pool'); yP.innerHTML = '';
+        for(let i=0; i<lv.a; i++) {
+            const y = document.createElement('div');
+            y.className = 'y-block'; y.innerText = 'Y'; y.id = 'y'+i; y.draggable = true; y.ondragstart = drag;
+            if(i === lv.a-1) {
+                const g = document.createElement('div'); g.className = 'gap-slot'; g.id = 'gap-box';
+                y.appendChild(g);
+            }
+            yP.appendChild(y);
+        }
+
+        const rP = document.getElementById('r-items'); rP.innerHTML = '';
+        for(let i=0; i<lv.c; i++) createItem(rP);
+
+        document.getElementById('b-L').innerHTML = '';
+        document.getElementById('b-R').innerHTML = '';
+        for(let i=0; i<lv.a; i++) {
+            makeBasket('L', i); makeBasket('R', i);
+        }
+        update();
+    }
+
+    function makeBasket(side, i) {
+        const row = document.createElement('div'); row.className = 'slot-row'; row.id = `row-${side}-${i}`;
+        const slot = document.createElement('div'); slot.className = 'group-slot'; slot.id = `s-${side}-${i}`;
+        slot.ondrop = (e) => { e.stopPropagation(); handleDrop(e, side, slot.id); };
+        slot.ondragover = allowDrop;
+        const mark = side === 'R' ? document.createElement('div') : null;
+        if(mark) { mark.id = `m-${side}-${i}`; mark.innerText = "⚪"; }
+        row.appendChild(slot); 
+        if(mark) row.appendChild(mark);
+        document.getElementById(`b-${side}`).appendChild(row);
+    }
+
+    function createItem(p) {
+        const it = document.createElement('div'); it.className = 'item'; it.innerText = '1';
+        it.draggable = true; it.id = 'it'+Math.random(); it.ondragstart = drag;
+        p.appendChild(it);
+    }
+
+    function allowDrop(e) { e.preventDefault(); }
+    function drag(e) { e.dataTransfer.setData("text", e.target.id); }
+
+    function handleDrop(e, side, slotId) {
+        e.preventDefault();
+        const id = e.dataTransfer.getData("text");
+        const lv = levels[cur];
+
+        if (id === 'spawn-item') {
+            if (side === 'L') {
+                if (addL < lv.b) {
+                    addL++;
+                    const d = document.createElement('div'); d.className = 'filled-dot';
+                    document.getElementById('gap-box').appendChild(d);
+                    if (addL === lv.b) {
+                        const box = document.getElementById('gap-box');
+                        box.parentElement.style.boxShadow = "0 0 15px rgba(46, 204, 113, 0.8)";
+                        setTimeout(()=>box.remove(), 400);
+                    }
+                } else {
+                    addL++; createItem(document.getElementById(slotId || 'y-pool'));
+                }
+            } else {
+                addR++; createItem(document.getElementById(slotId || 'r-items'));
+            }
+        } else {
+            const el = document.getElementById(id);
+            const fromR = el.closest('#pan-R');
+            if (el.classList.contains('item')) {
+                if (fromR && side === 'L') { addR--; addL++; }
+                if (!fromR && side === 'R') { addR++; addL--; }
+            }
+            document.getElementById(slotId || (side === 'L' ? 'y-pool' : 'r-items')).appendChild(el);
+        }
+        update();
+    }
+
+    function dropTrash(e) {
+        const id = e.dataTransfer.getData("text");
+        const el = document.getElementById(id);
+        if (el && id !== 'spawn-item') {
+            if (el.closest('#pan-L') && el.classList.contains('item')) addL--;
+            if (el.closest('#pan-R') && el.classList.contains('item')) addR--;
+            el.remove(); update();
+        }
+    }
+
+    function update() {
+        const lv = levels[cur];
+        document.getElementById('eq1-l').innerHTML = `${lv.a}Y - ${lv.b}${addL>0? `<span style="color:var(--success-color)"> + ${addL}</span>`:''}`;
+        document.getElementById('eq1-r').innerHTML = `${lv.c}${addR>0? `<span style="color:var(--success-color)"> + ${addR}</span>`:''}`;
+
+        const wL = (lv.a * lv.ans - lv.b) + addL;
+        const wR = lv.c + addR;
+        const diff = wR - wL;
+        document.getElementById('beam-wrap').style.transform = `rotate(${diff * 1.5}deg)`;
+        
+        const op = document.getElementById('eq1-op');
+        op.innerText = diff === 0 ? "=" : (diff > 0 ? "<" : ">");
+        op.style.color = diff === 0 ? "var(--success-color)" : "var(--error-color)";
+
+        // 步驟二：2Y = 14 的顯示 (只要平衡就出現)
+        const step2 = document.getElementById('eq-step2');
+        if (addL === lv.b && diff === 0) {
+            step2.style.visibility = 'visible';
+            document.getElementById('eq2-l').innerText = `${lv.a}Y`;
+            document.getElementById('eq2-r').innerText = lv.c + addR;
+            document.getElementById('msg-bar').innerText = `平衡了！現在兩邊同時平均分組到籃子裡`;
+        } else {
+            step2.style.visibility = 'hidden';
+            document.getElementById('eq-step3').style.visibility = 'hidden';
+        }
+        check();
+    }
+
+    function check() {
+        const lv = levels[cur];
+        const balanced = (addL === lv.b && (lv.c + addR) === lv.a * lv.ans);
+        let winCount = 0;
+        
+        for(let i=0; i<lv.a; i++) {
+            const sL = document.getElementById(`s-L-${i}`);
+            const sR = document.getElementById(`s-R-${i}`);
+            const m = document.getElementById(`m-R-${i}`);
+            
+            const hasY = Array.from(sL.children).some(c => c.classList.contains('y-block'));
+            const countR = Array.from(sR.children).length;
+
+            if (hasY && countR === lv.ans && balanced) {
+                m.innerText = "✅"; winCount++;
+            } else if (hasY || countR > 0) {
+                m.innerText = "❌";
+            } else {
+                m.innerText = "⚪";
+            }
+        }
+
+        const clean = document.getElementById('y-pool').children.length === 0 && document.getElementById('r-items').children.length === 0;
+
+        // 成功條件：全部分組正確
+        if (winCount === lv.a && clean) {
+            const currentTotalR = lv.c + addR;
+            
+            // 只有在這一步才更新 Step 2 為除法形式，並顯示 Step 3
+            document.getElementById('eq2-l').innerHTML = `${lv.a}Y <span style="font-size:0.8em; color:#95a5a6">÷ ${lv.a}</span>`;
+            document.getElementById('eq2-r').innerHTML = `${currentTotalR} <span style="font-size:0.8em; color:#95a5a6">÷ ${lv.a}</span>`;
+            
+            document.getElementById('eq-step3').style.visibility = 'visible';
+            document.getElementById('eq3-r').innerText = lv.ans;
+            
+            document.getElementById('msg-bar').innerHTML = `<span style="color:var(--success-color)">🎉 太棒了！平均分組後得 Y = ${lv.ans}</span>`;
+            document.getElementById('nextBtn').style.display = 'inline-block';
+            
+            for(let i=1; i<lv.a; i++) {
+                document.getElementById(`row-L-${i}`).classList.add('fade-out');
+                document.getElementById(`row-R-${i}`).classList.add('fade-out');
+            }
+        } else {
+            document.querySelectorAll('.slot-row').forEach(r => r.classList.remove('fade-out'));
+        }
+    }
+
+    function nextLevel() { cur = (cur + 1) % levels.length; init(); }
+    function reset() { init(); }
+    init();
+</script>
+</body>
+</html>

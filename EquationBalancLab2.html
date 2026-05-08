@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>互動天秤：加強型盤兜版</title>
+    <style>
+        :root { --main-color: #3498db; --right-color: #9b59b6; --success-color: #2ecc71; --warn-color: #e67e22; --y-color: #e67e22; }
+        body { font-family: sans-serif; background: #f0f2f5; display: flex; flex-direction: column; align-items: center; margin: 0; padding: 20px; touch-action: none; position: relative; }
+        
+        /* Index 掣搬到右上角 */
+        .index-btn { position: absolute; top: 15px; right: 15px; padding: 10px 18px; background: #34495e; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; z-index: 100; }
+
+        /* 算式區域 */
+        .eq-container { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); width: 95%; max-width: 450px; margin-bottom: 20px; }
+        .eq-line { display: flex; align-items: center; font-size: 28px; font-weight: bold; margin: 8px 0; min-height: 40px; }
+        .side-l { width: 180px; text-align: right; }
+        .side-c { width: 60px; text-align: center; color: #7f8c8d; }
+        .side-r { width: 180px; text-align: left; }
+        .title-text { font-size: 14px; color: #95a5a6; text-align: center; margin-bottom: 10px; width: 100%; }
+        .plus { color: #2ecc71; }
+
+        /* 天秤主體 */
+        #balance-world { position: relative; width: 500px; height: 350px; display: flex; justify-content: center; margin-bottom: 10px; }
+        #base { position: absolute; bottom: 10px; width: 240px; height: 25px; background: #7f8c8d; border-radius: 12px; z-index: 1; }
+        #pillar { position: absolute; bottom: 35px; width: 20px; height: 180px; background: #95a5a6; z-index: 1; }
+        
+        #beam-wrap { position: absolute; top: 120px; width: 460px; display: flex; justify-content: center; z-index: 2; }
+        #beam { width: 100%; height: 12px; background: #bdc3c7; border-radius: 6px; display: flex; justify-content: space-between; transition: transform 0.4s; transform-origin: center; }
+
+        .pan-wrap { width: 180px; display: flex; flex-direction: column; align-items: center; transition: transform 0.4s; transform-origin: top center; margin-top: 12px; }
+        
+        .pan-basket { 
+            position: relative;
+            width: 170px; 
+            min-height: 120px; 
+            background: rgba(52, 73, 94, 0.1);
+            border-left: 8px solid #34495e; 
+            border-right: 8px solid #34495e; 
+            border-bottom: 15px solid #34495e; 
+            border-radius: 0 0 20px 20px;
+            display: flex; 
+            flex-wrap: wrap-reverse; 
+            justify-content: center; 
+            align-content: flex-start; 
+            gap: 5px;
+            padding: 5px;
+        }
+
+        /* 物件樣式 */
+        .y-block {
+            position: relative; width: 80px; height: 80px; background: var(--y-color); border-radius: 4px;
+            display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; overflow: hidden;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.1); flex-shrink: 0;
+        }
+        .y-label { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 36px; color: white; font-weight: bold; z-index: 5; pointer-events: none; }
+        .gap-grid { grid-column: 2; grid-row: 2; display: grid; grid-template-columns: repeat(2, 1fr); grid-template-rows: repeat(2, 1fr); background: #fdf2e9; border: 2px dashed rgba(0, 0, 0, 0.3); }
+        .filled-cell { background: var(--y-color); border: 0.5px solid rgba(255,255,255,0.4); }
+
+        .item { width: 36px; height: 36px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-weight: bold; color: white; cursor: grab; touch-action: none; user-select: none; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+        .item-left { background: var(--y-color); }
+        .item-right { background: var(--right-color); }
+
+        .supply-bin { width: 95%; max-width: 450px; padding: 15px; background: white; border-radius: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin-top: 10px; display: flex; justify-content: space-around; }
+        .tool { display: flex; flex-direction: column; align-items: center; gap: 8px; font-weight: bold; color: #7f8c8d; font-size: 14px; }
+        
+        #msg { height: 35px; font-weight: bold; margin-top: 10px; font-size: 18px; color: #2c3e50; text-align: center; }
+        .trash-hint { color: #95a5a6; font-size: 12px; margin-top: 5px; }
+    </style>
+</head>
+<body>
+
+<button class="index-btn" onclick="window.location.href='index.html'">Index</button>
+
+<div class="eq-container">
+    <div class="title-text">題目方程式</div>
+    <div class="eq-line" style="color: #95a5a6; opacity: 0.7;">
+        <div class="side-l" id="t-left">Y - 3</div>
+        <div class="side-c">=</div>
+        <div class="side-r" id="t-right">2</div>
+    </div>
+    <div class="eq-line">
+        <div class="side-l" id="m-left">Y - 3</div>
+        <div class="side-c" id="m-op">=</div>
+        <div class="side-r" id="m-right">2</div>
+    </div>
+    <div id="ans-row" class="eq-line" style="color: var(--success-color); visibility: hidden;">
+        <div class="side-l">Y</div>
+        <div class="side-c">=</div>
+        <div class="side-r" id="ans-val">5</div>
+    </div>
+</div>
+
+<div id="balance-world">
+    <div id="base"></div>
+    <div id="pillar"></div>
+    
+    <div id="beam-wrap">
+        <div id="beam">
+            <div class="pan-wrap">
+                <div id="left-pan-content" class="pan-basket">
+                    <div class="y-block" id="y-main">
+                        <div class="y-label">Y</div>
+                        <div class="gap-grid" id="y-gap-zone"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="pan-wrap">
+                <div id="right-pan-content" class="pan-basket"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="supply-bin">
+    <div class="tool"><span>補回碎片 (+1)</span><div class="item item-left" onpointerdown="startDrag(event, 'left')">1</div></div>
+    <div class="tool"><span>右邊重量 (+1)</span><div class="item item-right" onpointerdown="startDrag(event, 'right')">1</div></div>
+</div>
+
+<div id="msg">⚖️ 天秤平衡中</div>
+<div class="trash-hint">💡 點擊兜內的法碼即可「攞走」</div>
+
+<div style="margin-top:20px;">
+    <button onclick="initLevel()" style="padding:12px 24px; background:#95a5a6; color:white; border:none; border-radius:8px; cursor:pointer; font-weight:bold;">重設</button>
+    <button onclick="nextLevel()" style="padding:12px 24px; background:var(--main-color); color:white; border:none; border-radius:8px; cursor:pointer; margin-left:15px; font-weight:bold;">下一關</button>
+</div>
+
+<script>
+    const levels = [
+        { lText: "Y - 3", rText: "2", minusNum: 3, initR: 2, yVal: 5 },
+        { lText: "Y - 4", rText: "5", minusNum: 4, initR: 5, yVal: 9 },
+        { lText: "Y - 1", rText: "3", minusNum: 1, initR: 3, yVal: 4 }
+    ];
+
+    let currentLvl = 0;
+    let addedL = 0; 
+    let addedR = 0;
+    let activeItem = null;
+
+    function initLevel() {
+        const lv = levels[currentLvl];
+        addedL = 0; addedR = 0;
+        document.getElementById('t-left').innerText = lv.lText;
+        document.getElementById('t-right').innerText = lv.rText;
+        document.getElementById('ans-row').style.visibility = 'hidden';
+        
+        document.getElementById('right-pan-content').innerHTML = '';
+        const lp = document.getElementById('left-pan-content');
+        while (lp.children.length > 1) lp.removeChild(lp.lastChild);
+
+        for(let i=0; i<lv.initR; i++) createPhysicalItem('right');
+        updateUI();
+    }
+
+    function startDrag(e, side) {
+        const clone = e.target.cloneNode(true);
+        clone.style.position = 'fixed'; clone.dataset.side = side; clone.style.zIndex = "2000";
+        document.body.appendChild(clone);
+        activeItem = clone;
+        activeItem.setPointerCapture(e.pointerId);
+        const rect = e.target.getBoundingClientRect();
+        activeItem.startX = e.clientX - rect.left; activeItem.startY = e.clientY - rect.top;
+    }
+
+    window.onpointermove = (e) => {
+        if (!activeItem) return;
+        activeItem.style.left = (e.clientX - activeItem.startX) + 'px';
+        activeItem.style.top = (e.clientY - activeItem.startY) + 'px';
+    };
+
+    window.onpointerup = (e) => {
+        if (!activeItem) return;
+        const lRect = document.getElementById('left-pan-content').getBoundingClientRect();
+        const rRect = document.getElementById('right-pan-content').getBoundingClientRect();
+        
+        if (e.clientX > lRect.left && e.clientX < lRect.right && e.clientY > lRect.top && e.clientY < lRect.bottom) {
+            addedL++; createPhysicalItem('left');
+        } else if (e.clientX > rRect.left && e.clientX < rRect.right && e.clientY > rRect.top && e.clientY < rRect.bottom) {
+            addedR++; createPhysicalItem('right');
+        }
+        
+        activeItem.remove(); activeItem = null;
+        updateUI();
+    };
+
+    function createPhysicalItem(side) {
+        const div = document.createElement('div');
+        div.className = `item item-${side}`;
+        div.innerText = '1';
+        div.onpointerdown = (e) => {
+            e.stopPropagation();
+            if(side === 'left') addedL--; else addedR--;
+            div.remove();
+            updateUI();
+        };
+        
+        if(side === 'right') {
+            document.getElementById('right-pan-content').appendChild(div);
+        } else {
+            const lv = levels[currentLvl];
+            const currentFilled = document.querySelectorAll('.filled-cell').length;
+            if (currentFilled < lv.minusNum) {
+                // 自動填入 Y block 嘅視覺效果喺 updateUI 做
+            } else {
+                document.getElementById('left-pan-content').appendChild(div);
+            }
+        }
+    }
+
+    function updateUI() {
+        const lv = levels[currentLvl];
+        const gapZone = document.getElementById('y-gap-zone');
+        gapZone.innerHTML = '';
+        for(let i=0; i < Math.min(addedL, lv.minusNum); i++) {
+            const cell = document.createElement('div');
+            cell.className = 'filled-cell';
+            gapZone.appendChild(cell);
+        }
+        gapZone.style.background = (addedL >= lv.minusNum) ? "var(--y-color)" : "#fdf2e9";
+        gapZone.style.border = (addedL >= lv.minusNum) ? "none" : "2px dashed rgba(0,0,0,0.3)";
+
+        document.getElementById('m-left').innerHTML = `${lv.lText}${addedL > 0 ? ` <span class="plus">+ ${addedL}</span>` : ''}`;
+        document.getElementById('m-right').innerHTML = `${lv.initR}${addedR > 0 ? ` <span class="plus">+ ${addedR}</span>` : ''}`;
+
+        const wL = (lv.yVal - lv.minusNum) + addedL;
+        const wR = lv.initR + addedR;
+        const angle = Math.max(-15, Math.min(15, (wR - wL) * 5));
+        document.getElementById('beam').style.transform = `rotate(${angle}deg)`;
+        document.querySelectorAll('.pan-wrap').forEach(p => p.style.transform = `rotate(${-angle}deg)`);
+
+        // --- 動態符號邏輯 ---
+        let opSym = "=";
+        let opColor = "#7f8c8d";
+        if (wL > wR) {
+            opSym = ">";
+            opColor = "var(--warn-color)";
+        } else if (wL < wR) {
+            opSym = "<";
+            opColor = "var(--warn-color)";
+        } else {
+            opSym = "=";
+            opColor = "var(--success-color)";
+        }
+        const mOp = document.getElementById('m-op');
+        mOp.innerText = opSym;
+        mOp.style.color = opColor;
+
+        const m = document.getElementById('msg');
+        if (addedL === lv.minusNum && addedR === lv.minusNum && wL === wR) {
+            document.getElementById('ans-row').style.visibility = 'visible';
+            document.getElementById('ans-val').innerText = lv.yVal;
+            m.innerText = "🎉 成功！方程已平衡。";
+            m.style.color = "var(--success-color)";
+        } else {
+            document.getElementById('ans-row').style.visibility = 'hidden';
+            m.innerText = wL === wR ? "⚖️ 左右平衡中" : "⚠️ 天秤傾斜了";
+            m.style.color = wL === wR ? "#2c3e50" : "var(--warn-color)";
+        }
+    }
+
+    function nextLevel() { currentLvl = (currentLvl + 1) % levels.length; initLevel(); }
+    window.onload = initLevel;
+</script>
+
+</body>
+</html>

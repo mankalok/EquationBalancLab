@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>互動天秤：除法動態邏輯</title>
+    <style>
+        :root { --main-color: #3498db; --success-color: #2ecc71; --error-color: #e74c3c; --warn-color: #f39c12; --text-size: 26px; }
+        body { font-family: "Microsoft JhengHei", sans-serif; background: #f0f3f6; display: flex; flex-direction: column; align-items: center; margin: 0; padding: 10px; touch-action: none; height: 100vh; overflow: hidden; position: relative; }
+
+        /* Index 掣 */
+        .index-btn { position: absolute; top: 10px; right: 10px; padding: 8px 15px; background: #34495e; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; z-index: 100; font-size: 14px; }
+
+        .eq-container { background: white; padding: 15px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 95%; max-width: 500px; margin-bottom: 10px; }
+        .eq-line { display: flex; align-items: center; justify-content: center; font-size: var(--text-size); font-weight: bold; min-height: 60px; }
+        .side { width: 180px; display: flex; align-items: center; justify-content: center; }
+        .frac { display: inline-flex; flex-direction: column; align-items: center; vertical-align: middle; font-size: 22px; line-height: 1; }
+        .frac .top { border-bottom: 2px solid black; padding: 0 8px; margin-bottom: 2px; }
+        .center-eq { width: 40px; text-align: center; color: #95a5a6; }
+        .mult-text { color: var(--error-color); margin-left: 8px; font-size: 24px; transition: all 0.2s; }
+
+        #stage { position: relative; width: 100%; max-width: 600px; height: 320px; display: flex; justify-content: center; margin-top: 10px; }
+        .pillar { position: absolute; bottom: 40px; width: 14px; height: 140px; background: #95a5a6; border-radius: 7px; z-index: 1; }
+        .base { position: absolute; bottom: 30px; width: 100px; height: 10px; background: #2c3e50; border-radius: 5px; }
+        
+        .beam-wrap { position: absolute; top: 60px; width: 540px; transition: transform 0.5s ease; }
+        .beam { width: 100%; height: 8px; background: #bdc3c7; border-radius: 4px; display: flex; justify-content: space-between; }
+
+        .basket { width: 230px; background: rgba(255,255,255,0.6); border: 3px solid #34495e; border-top: none; border-radius: 0 0 15px 15px; padding: 10px; min-height: 180px; cursor: pointer; display: flex; flex-wrap: wrap; align-content: flex-start; gap: 6px; position: relative; }
+        .basket-hint { position: absolute; top: -25px; width: 100%; text-align: center; font-size: 14px; color: #7f8c8d; pointer-events: none; }
+
+        .item { height: 42px; display: flex; align-items: center; justify-content: center; font-weight: bold; color: white; border-radius: 8px; cursor: pointer; user-select: none; transition: transform 0.1s; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .item-y { width: 42px; background: var(--warn-color); border: 2px dashed rgba(255,255,255,0.6); font-size: 13px; }
+        .item-v { width: 42px; background: #9b59b6; font-size: 18px; }
+        .full-y { width: 95px; background: var(--warn-color); border: 2px solid white; font-size: 20px; box-shadow: 0 4px 0 #d35400; }
+
+        #msg { margin: 10px 0; font-weight: bold; font-size: 18px; color: #2c3e50; min-height: 28px; text-align: center; }
+        .btns { display: flex; gap: 15px; margin-top: 10px; margin-bottom: 30px; }
+        button { padding: 10px 20px; border: none; border-radius: 8px; background: var(--main-color); color: white; font-weight: bold; cursor: pointer; font-size: 16px; }
+    </style>
+</head>
+<body>
+
+<button class="index-btn" onclick="window.location.href='index.html'">Index</button>
+
+<div class="eq-container">
+    <div class="eq-line" id="line1" style="opacity: 0.5;">
+        <div class="side">
+            <div class="frac"><span class="top">Y</span><span class="q-div-val">4</span></div>
+        </div>
+        <div class="center-eq">=</div>
+        <div class="side q-v-val">3</div>
+    </div>
+    
+    <div class="eq-line">
+        <div class="side">
+            <div class="frac"><span class="top">Y</span><span class="q-div-val">4</span></div>
+            <span id="l-mult" class="mult-text"></span>
+        </div>
+        <div class="center-eq" id="dynamic-op">=</div>
+        <div class="side">
+            <span class="q-v-val">3</span>
+            <span id="r-mult" class="mult-text"></span>
+        </div>
+    </div>
+
+    <div id="ans-row" class="eq-line" style="visibility: hidden; color: var(--success-color);">
+        <div class="side">Y</div><div class="center-eq">=</div><div class="side" id="ans-val">12</div>
+    </div>
+</div>
+
+<div id="msg">點擊籃子增加份數，點擊物件減少份數</div>
+
+<div id="stage">
+    <div class="base"></div><div class="pillar"></div>
+    <div class="beam-wrap" id="beam">
+        <div class="beam">
+            <div class="basket" id="basket-L" onclick="change('L', 1, event)">
+                <div class="basket-hint">左邊 (倍數)</div>
+            </div>
+            <div class="basket" id="basket-R" onclick="change('R', 1, event)">
+                <div class="basket-hint">右邊 (倍數)</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="btns">
+    <button onclick="reset()">重置</button>
+    <button id="next-btn" onclick="next()">下一題</button>
+</div>
+
+<script>
+    const levels = [{ d: 4, v: 3 }, { d: 3, v: 5 }, { d: 2, v: 6 }];
+    let cur = 0, cL = 1, cR = 1;
+
+    function change(side, delta, e) {
+        if (e.target !== e.currentTarget && delta > 0) return; 
+        if (side === 'L') cL = Math.max(1, cL + delta);
+        else cR = Math.max(1, cR + delta);
+        update();
+    }
+
+    function update() {
+        const lv = levels[cur];
+        const bL = document.getElementById('basket-L');
+        const bR = document.getElementById('basket-R');
+        
+        // 渲染左邊：自動合成
+        let hL = '<div class="basket-hint">左邊</div>';
+        let tempL = cL;
+        while (tempL >= lv.d) {
+            hL += `<div class="item full-y" onclick="change('L', -${lv.d}, event)">完整 Y</div>`;
+            tempL -= lv.d;
+        }
+        for (let i = 0; i < tempL; i++) {
+            hL += `<div class="item item-y" onclick="change('L', -1, event)">Y/${lv.d}</div>`;
+        }
+        bL.innerHTML = hL;
+
+        // 渲染右邊
+        let hR = '<div class="basket-hint">右邊</div>';
+        for (let i = 0; i < cR; i++) {
+            hR += `<div class="item item-v" onclick="change('R', -1, event)">${lv.v}</div>`;
+        }
+        bR.innerHTML = hR;
+
+        // 算式更新
+        document.getElementById('l-mult').innerText = cL > 1 ? ` × ${cL}` : '';
+        document.getElementById('r-mult').innerText = cR > 1 ? ` × ${cR}` : '';
+        document.getElementById('line1').style.opacity = (cL === lv.d && cR === lv.d) ? 1 : 0.5;
+
+        // 動態符號邏輯
+        const opEl = document.getElementById('dynamic-op');
+        if (cL > cR) {
+            opEl.innerText = '>';
+            opEl.style.color = 'var(--error-color)';
+        } else if (cL < cR) {
+            opEl.innerText = '<';
+            opEl.style.color = 'var(--error-color)';
+        } else {
+            opEl.innerText = '=';
+            opEl.style.color = 'var(--success-color)';
+        }
+
+        // 天秤物理
+        const angle = (cR - cL) * 4;
+        document.getElementById('beam').style.transform = `rotate(${angle}deg)`;
+
+        // 判定
+        const isBalanced = (cL === cR);
+        const isGoal = (cL === lv.d);
+        const ansRow = document.getElementById('ans-row');
+
+        if (isBalanced && isGoal) {
+            document.getElementById('msg').innerText = `🎉 啱晒！${lv.d}份 拼成了 1個 Y`;
+            ansRow.style.visibility = 'visible';
+            document.getElementById('ans-val').innerText = lv.v * lv.d;
+            document.getElementById('next-btn').style.background = 'var(--success-color)';
+        } else {
+            ansRow.style.visibility = 'hidden';
+            document.getElementById('next-btn').style.background = '#95a5a6';
+            if (cL > lv.d) document.getElementById('msg').innerText = "點多咗喇，點擊完整 Y 或者碎片減返佢。";
+            else if (!isBalanced) document.getElementById('msg').innerText = "左右倍數要一樣先平衡！";
+            else document.getElementById('msg').innerText = `再加到 ${lv.d} 份嚟拼成 Y 啦。`;
+        }
+    }
+
+    function reset() { 
+        cL = 1; cR = 1; 
+        const divs = document.querySelectorAll('.q-div-val');
+        const vs = document.querySelectorAll('.q-v-val');
+        divs.forEach(el => el.innerText = levels[cur].d);
+        vs.forEach(el => el.innerText = levels[cur].v);
+        update(); 
+    }
+    
+    function next() { cur = (cur + 1) % levels.length; reset(); }
+
+    window.onload = reset;
+</script>
+
+</body>
+</html>

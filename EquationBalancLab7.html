@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>兩步方程：自由探索工具</title>
+    <style>
+        :root { --main-color: #3498db; --success-color: #2ecc71; --error-color: #e74c3c; --y-color: #f39c12; --item-v: #9b59b6; }
+        body { font-family: "Microsoft JhengHei", sans-serif; background: #f0f2f5; display: flex; flex-direction: column; align-items: center; padding: 20px; overflow-x: hidden; position: relative; }
+
+        /* 已修改：將 Index 按鈕移至右上角，並保持固定位置 */
+        .index-btn { 
+            position: fixed; 
+            top: 20px; 
+            right: 20px; 
+            padding: 10px 20px; 
+            background: #34495e; 
+            color: white; 
+            border: none; 
+            border-radius: 8px; 
+            font-weight: bold; 
+            cursor: pointer; 
+            z-index: 1000; 
+            text-decoration: none; 
+            font-size: 16px; 
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .index-btn:hover { background: #2c3e50; }
+
+        .header-title { background: #2c3e50; color: white; padding: 15px 40px; border-radius: 10px; margin-bottom: 20px; font-size: 28px; font-weight: bold; display: flex; align-items: center; gap: 10px; }
+
+        .layout-container { display: flex; width: 100%; max-width: 1200px; gap: 30px; align-items: flex-start; }
+        .main-game { flex: 2; display: flex; flex-direction: column; align-items: center; }
+        
+        .eq-panel { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 100%; margin-bottom: 15px; }
+        .eq-line { display: flex; align-items: center; justify-content: center; font-size: 32px; font-weight: bold; height: 60px; }
+        .side-display { flex: 1; display: flex; justify-content: center; align-items: center; }
+        .frac { display: inline-flex; flex-direction: column; align-items: center; vertical-align: middle; line-height: 1; font-size: 32px; }
+        .frac .top { border-bottom: 3px solid black; padding: 0 5px; }
+
+        .step-sidebar { flex: 1.5; background: #fff; border: 3px solid var(--success-color); border-radius: 20px; padding: 25px; 
+                         display: none; box-shadow: 0 10px 30px rgba(46, 204, 113, 0.2); animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        @keyframes popIn { from { opacity: 0; transform: scale(0.8); } to { opacity: 1; transform: scale(1); } }
+        
+        .step-table { width: 100%; font-size: 22px; font-weight: bold; border-collapse: collapse; }
+        .step-table td { padding: 8px 0; }
+        .td-r { text-align: right; width: 48%; }
+        .td-c { text-align: center; width: 4%; color: #bdc3c7; }
+        .td-l { text-align: left; width: 48%; }
+        .highlight { color: var(--y-color); font-size: 30px; }
+        .process-row { color: #e74c3c; font-size: 18px; }
+
+        #stage { position: relative; width: 100%; height: 380px; display: flex; justify-content: center; margin-top: 20px; }
+        .beam-wrap { position: absolute; top: 60px; width: 560px; transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
+        .beam { width: 100%; height: 12px; background: #bdc3c7; border-radius: 6px; display: flex; justify-content: space-between; }
+        .basket { width: 260px; min-height: 250px; background: rgba(255,255,255,0.8); border: 4px solid #34495e; border-top: none; border-radius: 0 0 25px 25px; padding: 12px; display: flex; flex-wrap: wrap; align-content: flex-start; gap: 8px; }
+        
+        .item { height: 45px; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; cursor: pointer; transition: transform 0.1s; user-select: none; }
+        .item-y-part { width: 45px; background: var(--y-color); border: 2px dashed white; font-size: 16px; }
+        .item-y-full { width: 100%; background: var(--y-color); border: 3px solid white; box-shadow: 0 4px 0 #d35400; font-size: 24px; }
+        .item-v { width: 45px; background: var(--item-v); font-size: 20px; }
+
+        .controls { display: flex; gap: 15px; margin: 25px 0; }
+        button { padding: 12px 24px; border-radius: 12px; border: none; background: var(--main-color); color: white; font-weight: bold; cursor: pointer; font-size: 18px; box-shadow: 0 4px 0 #2980b9; }
+        button.reset { background: #95a5a6; box-shadow: 0 4px 0 #7f8c8d; }
+        button.next { background: #e67e22; box-shadow: 0 4px 0 #d35400; }
+    </style>
+</head>
+<body>
+
+<a href="index.html" class="index-btn">返回主頁</a>
+
+<div class="header-title" id="level-title">探索題目：<div class="frac"><span class="top">y</span><span>3</span></div> + 1 = 6</div>
+
+<div class="layout-container">
+    <div class="main-game">
+        <div style="color: #7f8c8d; font-weight: bold; margin-bottom: 10px;">點擊籃內物件可個別刪除</div>
+        <div class="eq-panel">
+            <div class="eq-line">
+                <div class="side-display" id="disp-L"></div>
+                <div style="width:60px; text-align:center" id="eq-op">=</div>
+                <div class="side-display" id="disp-R"></div>
+            </div>
+        </div>
+
+        <div id="stage">
+            <div class="beam-wrap" id="beam">
+                <div class="beam">
+                    <div class="basket" id="basket-L"></div>
+                    <div class="basket" id="basket-R"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button onclick="addFullSet()">複製整份題目內容 (+1份)</button>
+            <button class="reset" onclick="resetLevel()">重置題目</button>
+            <button class="next" onclick="nextLevel()">下一題</button>
+        </div>
+    </div>
+
+    <div class="step-sidebar" id="sidebar">
+        <h3 style="text-align:center; color:var(--success-color); margin-top:0; font-size:26px;">解題思維總結</h3>
+        <table class="step-table" id="summary-table"></table>
+    </div>
+</div>
+
+<script>
+    const levels = [
+        { y_div: 3, add_v: 1, target_r: 6 },
+        { y_div: 4, add_v: 2, target_r: 5 },
+        { y_div: 2, add_v: 3, target_r: 7 }
+    ];
+    let currentLevel = 0;
+
+    let state = {
+        partsL: 0, 
+        onesL: 0,  
+        onesR: 0   
+    };
+
+    function initLevel() {
+        const lv = levels[currentLevel];
+        state.partsL = 1; 
+        state.onesL = lv.add_v;
+        state.onesR = lv.target_r;
+        
+        document.getElementById('sidebar').style.display = 'none';
+        document.getElementById('level-title').innerHTML = `探索題目：<div class="frac"><span class="top">y</span><span>${lv.y_div}</span></div> + ${lv.add_v} = ${lv.target_r}`;
+        update();
+    }
+
+    function update() {
+        const lv = levels[currentLevel];
+        const bL = document.getElementById('basket-L');
+        const bR = document.getElementById('basket-R');
+        
+        const fullY = Math.floor(state.partsL / lv.y_div);
+        const remParts = state.partsL % lv.y_div;
+
+        let hL = '';
+        for(let i=0; i<fullY; i++) hL += `<div class="item item-y-full" onclick="removeItem('fullY')">y</div>`;
+        for(let i=0; i<remParts; i++) hL += `<div class="item item-y-part" onclick="removeItem('partL')">y/${lv.y_div}</div>`;
+        for(let i=0; i<state.onesL; i++) hL += `<div class="item item-v" onclick="removeItem('oneL')">1</div>`;
+        bL.innerHTML = hL;
+
+        let hR = '';
+        for(let i=0; i<state.onesR; i++) hR += `<div class="item item-v" onclick="removeItem('oneR')">1</div>`;
+        bR.innerHTML = hR;
+
+        let txtL = "";
+        if (fullY > 0) txtL += (fullY === 1 ? "y" : `${fullY}y`);
+        if (remParts > 0) {
+            let pStr = `<div class="frac"><span class="top">${remParts > 1 ? remParts : ''}y</span><span>${lv.y_div}</span></div>`;
+            txtL += (txtL ? " + " + pStr : pStr);
+        }
+        if (state.onesL > 0) txtL += (txtL ? " + " : "") + state.onesL;
+        if (!txtL) txtL = "0";
+
+        document.getElementById('disp-L').innerHTML = txtL;
+        document.getElementById('disp-R').innerHTML = state.onesR;
+
+        const y_val = (lv.target_r - lv.add_v) * lv.y_div;
+        const currentTotalL = (state.partsL * (y_val / lv.y_div)) + state.onesL;
+        const currentTotalR = state.onesR;
+        
+        const angle = Math.min(20, Math.max(-20, (currentTotalR - currentTotalL) * 10));
+        document.getElementById('beam').style.transform = `rotate(${angle}deg)`;
+
+        const op = document.getElementById('eq-op');
+        if (Math.abs(currentTotalL - currentTotalR) < 0.001) {
+            op.innerText = "="; op.style.color = "var(--success-color)";
+            if (fullY === 1 && remParts === 0 && state.onesL === 0 && state.onesR === y_val) {
+                renderSummary(lv, y_val);
+                document.getElementById('sidebar').style.display = 'block';
+            }
+        } else {
+            op.innerText = currentTotalL > currentTotalR ? ">" : "<";
+            op.style.color = "var(--error-color)";
+        }
+    }
+
+    function renderSummary(lv, ans) {
+        const midVal = lv.target_r - lv.add_v;
+        const table = document.getElementById('summary-table');
+        table.innerHTML = `
+            <tr>
+                <td class="td-r"><div class="frac"><span class="top">y</span><span>${lv.y_div}</span></div> + ${lv.add_v}</td>
+                <td class="td-c">=</td>
+                <td class="td-l">${lv.target_r}</td>
+            </tr>
+            <tr class="process-row">
+                <td class="td-r"><div class="frac"><span class="top">y</span><span>${lv.y_div}</span></div> + ${lv.add_v} - ${lv.add_v}</td>
+                <td class="td-c">=</td>
+                <td class="td-l">${lv.target_r} - ${lv.add_v}</td>
+            </tr>
+            <tr>
+                <td class="td-r"><div class="frac"><span class="top">y</span><span>${lv.y_div}</span></div></td>
+                <td class="td-c">=</td>
+                <td class="td-l">${midVal}</td>
+            </tr>
+            <tr class="process-row" style="color: #3498db;">
+                <td class="td-r">(<div class="frac"><span class="top">y</span><span>${lv.y_div}</span></div>) × ${lv.y_div}</td>
+                <td class="td-c">=</td>
+                <td class="td-l">${midVal} × ${lv.y_div}</td>
+            </tr>
+            <tr class="highlight">
+                <td class="td-r">y</td>
+                <td class="td-c">=</td>
+                <td class="td-l">${ans}</td>
+            </tr>
+        `;
+    }
+
+    function removeItem(type) {
+        if (type === 'fullY') state.partsL -= levels[currentLevel].y_div;
+        if (type === 'partL') state.partsL -= 1;
+        if (type === 'oneL')  state.onesL -= 1;
+        if (type === 'oneR')  state.onesR -= 1;
+        update();
+    }
+
+    function addFullSet() {
+        const lv = levels[currentLevel];
+        state.partsL += 1;
+        state.onesL += lv.add_v;
+        state.onesR += lv.target_r;
+        update();
+    }
+
+    function nextLevel() {
+        currentLevel = (currentLevel + 1) % levels.length;
+        initLevel();
+    }
+
+    function resetLevel() {
+        initLevel();
+    }
+
+    initLevel();
+</script>
+</body>
+</html>

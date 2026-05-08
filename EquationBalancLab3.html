@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>互動天秤：平分邏輯教學版</title>
+    <style>
+        :root { --main-color: #3498db; --success-color: #2ecc71; --error-color: #e74c3c; --warn-color: #f39c12; --text-size: 26px; }
+        body { font-family: "Microsoft JhengHei", sans-serif; background: #f0f3f6; display: flex; flex-direction: column; align-items: center; margin: 0; padding: 10px; touch-action: none; height: 100vh; overflow: hidden; position: relative; }
+
+        .index-btn { position: absolute; top: 10px; right: 10px; padding: 8px 15px; background: #34495e; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; z-index: 100; font-size: 14px; }
+
+        .eq-container { background: white; padding: 15px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 95%; max-width: 500px; margin-bottom: 10px; }
+        .eq-line { display: flex; align-items: center; justify-content: center; font-size: var(--text-size); font-weight: bold; height: 40px; }
+        .side { width: 180px; display: flex; align-items: center; font-size: var(--text-size); }
+        .side-l { justify-content: flex-end; }
+        .side-r { justify-content: flex-start; }
+        .center-eq { width: 40px; text-align: center; color: #95a5a6; }
+        .div-text { color: var(--error-color); margin-left: 8px; opacity: 0; font-size: var(--text-size); transition: opacity 0.3s; }
+
+        #stage { position: relative; width: 100%; max-width: 600px; height: 450px; display: flex; justify-content: center; margin-top: 10px; }
+        .pillar { position: absolute; bottom: 80px; width: 14px; height: 220px; background: #95a5a6; border-radius: 7px; z-index: 1; }
+        .base { position: absolute; bottom: 70px; width: 100px; height: 10px; background: #2c3e50; border-radius: 5px; }
+        
+        .beam-wrap { position: absolute; top: 80px; width: 560px; }
+        .beam { width: 100%; height: 8px; background: #bdc3c7; border-radius: 4px; display: flex; justify-content: space-between; position: relative; }
+
+        .basket-container { width: 250px; display: flex; flex-direction: column; background: rgba(0,0,0,0.03); border: 2px solid #34495e; border-top: none; border-radius: 0 0 15px 15px; min-height: 320px; padding: 5px; }
+        
+        /* 籃（分組 Slot）*/
+        .group-slot { 
+            border: 2px dashed #bdc3c7; border-radius: 8px; margin: 4px 0; min-height: 55px; 
+            display: flex; flex-wrap: wrap; justify-content: center; align-content: center; gap: 3px;
+            position: relative; background: rgba(255,255,255,0.7); transition: opacity 0.5s;
+        }
+
+        /* 底部大兜（原本所有嘢擺呢度）*/
+        .bottom-pool {
+            margin-top: auto; border-top: 2px solid #34495e; min-height: 80px; background: rgba(255,255,255,0.9);
+            display: flex; flex-wrap: wrap; gap: 3px; justify-content: center; align-content: center; border-radius: 0 0 12px 12px;
+        }
+
+        .slot-feedback { position: absolute; right: -30px; font-size: 20px; pointer-events: none; }
+        .basket-l .slot-feedback { left: -30px; right: auto; }
+
+        .item { width: 32px; height: 32px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-weight: bold; color: white; cursor: grab; touch-action: none; z-index: 10; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+        .item-y { background: var(--warn-color); }
+        .item-v { background: #9b59b6; font-size: 14px; }
+
+        #msg { margin: 10px 0; font-weight: bold; font-size: 18px; color: #2c3e50; text-align: center; min-height: 24px; padding: 0 10px; }
+        .btns { display: flex; gap: 15px; margin-top: 10px; }
+        button { padding: 10px 25px; border: none; border-radius: 8px; background: var(--main-color); color: white; font-weight: bold; cursor: pointer; font-size: 16px; box-shadow: 0 4px #2980b9; }
+        button:active { transform: translateY(2px); box-shadow: 0 2px #2980b9; }
+    </style>
+</head>
+<body>
+
+<button class="index-btn" onclick="window.location.href='index.html'">Index</button>
+
+<div class="eq-container">
+    <div class="eq-line" id="eq1" style="opacity: 0.5;">
+        <div class="side side-l">3Y</div><div class="center-eq">=</div><div class="side side-r">12</div>
+    </div>
+    <div class="eq-line">
+        <div class="side side-l"><span id="l-base">3Y</span><span id="l-div" class="div-text">÷ 3</span></div>
+        <div class="center-eq">=</div>
+        <div class="side side-r"><span id="r-base">12</span><span id="r-div" class="div-text">÷ 3</span></div>
+    </div>
+    <div class="eq-line" id="ans-row" style="visibility: hidden; color: var(--success-color);">
+        <div class="side side-l">Y</div><div class="center-eq">=</div><div class="side side-r" id="ans-val">4</div>
+    </div>
+</div>
+
+<div id="msg">請由天秤底部將 Y 同法碼拉上分組籃</div>
+
+<div id="stage">
+    <div class="base"></div><div class="pillar"></div>
+    <div class="beam-wrap">
+        <div class="beam">
+            <div class="basket-container basket-l">
+                <div id="slots-L"></div>
+                <div id="pool-L" class="bottom-pool"></div>
+            </div>
+            <div class="basket-container basket-r">
+                <div id="slots-R"></div>
+                <div id="pool-R" class="bottom-pool"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="btns">
+    <button onclick="checkLogic()">檢查分組</button>
+    <button onclick="nextLevel()" style="background:#95a5a6; box-shadow: 0 4px #7f8c8d;">下一關</button>
+</div>
+
+<script>
+    const levels = [{ y: 3, v: 12, ans: 4 }, { y: 2, v: 10, ans: 5 }];
+    let cur = 0;
+    let dragged = null;
+
+    function init() {
+        const lv = levels[cur];
+        document.querySelector('#eq1 .side-l').innerText = lv.y + 'Y';
+        document.querySelector('#eq1 .side-r').innerText = lv.v;
+        document.getElementById('l-base').innerText = lv.y + 'Y';
+        document.getElementById('r-base').innerText = lv.v;
+        document.getElementById('l-div').innerText = ' ÷ ' + lv.y;
+        document.getElementById('r-div').innerText = ' ÷ ' + lv.y;
+        document.getElementById('l-div').style.opacity = 0;
+        document.getElementById('r-div').style.opacity = 0;
+        document.getElementById('ans-row').style.visibility = 'hidden';
+
+        const sL = document.getElementById('slots-L');
+        const sR = document.getElementById('slots-R');
+        sL.innerHTML = ''; sR.innerHTML = '';
+        for(let i=0; i<lv.y; i++) {
+            sL.innerHTML += `<div class="group-slot" id="slot-L-${i}" data-side="L"><div class="slot-feedback"></div></div>`;
+            sR.innerHTML += `<div class="group-slot" id="slot-R-${i}" data-side="R"><div class="slot-feedback"></div></div>`;
+        }
+
+        const pL = document.getElementById('pool-L');
+        const pR = document.getElementById('pool-R');
+        pL.innerHTML = ''; pR.innerHTML = '';
+        for(let i=0; i<lv.y; i++) createItem('Y', 'item-y', pL, 'L');
+        for(let i=0; i<lv.v; i++) createItem('1', 'item-v', pR, 'R');
+    }
+
+    function createItem(txt, cls, parent, side) {
+        const div = document.createElement('div');
+        div.className = `item ${cls}`; div.innerText = txt;
+        div.dataset.side = side;
+        
+        div.onpointerdown = e => {
+            dragged = div;
+            div.setPointerCapture(e.pointerId);
+            div.style.position = 'fixed';
+            div.style.zIndex = "1000";
+            moveAt(e.clientX, e.clientY);
+        };
+
+        div.onclick = () => {
+            if (div.parentElement.classList.contains('group-slot')) {
+                const side = div.dataset.side;
+                document.getElementById('pool-' + side).appendChild(div);
+                resetVisuals();
+            }
+        };
+        parent.appendChild(div);
+    }
+
+    function moveAt(x, y) {
+        if(!dragged) return;
+        dragged.style.left = (x - 16) + 'px';
+        dragged.style.top = (y - 16) + 'px';
+    }
+
+    window.onpointermove = e => { if(dragged) moveAt(e.clientX, e.clientY); };
+
+    window.onpointerup = e => {
+        if(!dragged) return;
+        dragged.style.visibility = 'hidden';
+        const target = document.elementFromPoint(e.clientX, e.clientY);
+        dragged.style.visibility = 'visible';
+        
+        const slot = target ? target.closest('.group-slot') : null;
+        const pool = target ? target.closest('.bottom-pool') : null;
+        const side = dragged.dataset.side;
+
+        dragged.style.position = 'static';
+        dragged.style.zIndex = "10";
+
+        if(slot && slot.dataset.side === side) {
+            slot.appendChild(dragged);
+        } else {
+            document.getElementById('pool-' + side).appendChild(dragged);
+        }
+        dragged = null;
+        resetVisuals();
+    };
+
+    function resetVisuals() {
+        const lv = levels[cur];
+        for(let i=0; i<lv.y; i++) {
+            const sl = document.getElementById(`slot-L-${i}`);
+            const sr = document.getElementById(`slot-R-${i}`);
+            sl.style.opacity = "1";
+            sr.style.opacity = "1";
+            sl.querySelector('.slot-feedback').innerText = '';
+            sr.querySelector('.slot-feedback').innerText = '';
+        }
+    }
+
+    function checkLogic() {
+        const lv = levels[cur];
+        let allPass = true;
+
+        for(let i=0; i<lv.y; i++) {
+            const sl = document.getElementById(`slot-L-${i}`);
+            const sr = document.getElementById(`slot-R-${i}`);
+            const countY = sl.querySelectorAll('.item-y').length;
+            const countV = sr.querySelectorAll('.item-v').length;
+            const feedL = sl.querySelector('.slot-feedback');
+            const feedR = sr.querySelector('.slot-feedback');
+
+            if(countY === 1 && countV === lv.ans) {
+                feedL.innerText = '✅'; feedR.innerText = '✅';
+                feedL.style.color = feedR.style.color = 'var(--success-color)';
+            } else {
+                feedL.innerText = '❌'; feedR.innerText = '❌';
+                feedL.style.color = feedR.style.color = 'var(--error-color)';
+                allPass = false;
+            }
+        }
+
+        if(allPass) {
+            document.getElementById('msg').innerText = "🎉 平分成功！Y = " + lv.ans;
+            document.getElementById('ans-row').style.visibility = 'visible';
+            document.getElementById('ans-val').innerText = lv.ans;
+            document.getElementById('l-div').style.opacity = 1;
+            document.getElementById('r-div').style.opacity = 1;
+
+            // 突顯第一組
+            for(let i=1; i<lv.y; i++) {
+                document.getElementById(`slot-L-${i}`).style.opacity = "0.2";
+                document.getElementById(`slot-R-${i}`).style.opacity = "0.2";
+            }
+        } else {
+            document.getElementById('msg').innerText = "❌ 未平分，請確保每組有 1 個 Y 同平均嘅法碼。";
+        }
+    }
+
+    function nextLevel() { cur = (cur + 1) % levels.length; init(); }
+    window.onload = init;
+</script>
+
+</body>
+</html>
