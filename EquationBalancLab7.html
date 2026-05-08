@@ -2,11 +2,11 @@
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>兩步方程：自由探索工具</title>
     <style>
         :root { --main-color: #3498db; --success-color: #2ecc71; --error-color: #e74c3c; --y-color: #f39c12; --item-v: #9b59b6; }
-        body { font-family: "Microsoft JhengHei", sans-serif; background: #f0f2f5; display: flex; flex-direction: column; align-items: center; padding: 20px; overflow-x: hidden; position: relative; }
+        body { font-family: "Microsoft JhengHei", sans-serif; background: #f0f2f5; display: flex; flex-direction: column; align-items: center; padding: 20px; overflow-x: hidden; position: relative; touch-action: manipulation; }
 
         /* 已修改：將 Index 按鈕移至右上角，並保持固定位置 */
         .index-btn { 
@@ -106,6 +106,26 @@
 </div>
 
 <script>
+    // iPad 觸控支援腳本：將觸控動作轉化為滑鼠點擊
+    (function() {
+        function touchHandler(event) {
+            var touches = event.changedTouches, first = touches[0], type = "";
+            switch(event.type) {
+                case "touchstart": type = "mousedown"; break;
+                case "touchmove":  type = "mousemove"; break;        
+                case "touchend":   type = "mouseup";   break;
+                default: return;
+            }
+            var simulatedEvent = document.createEvent("MouseEvent");
+            simulatedEvent.initMouseEvent(type, true, true, window, 1, first.screenX, first.screenY, first.clientX, first.clientY, false, false, false, false, 0, null);
+            first.target.dispatchEvent(simulatedEvent);
+        }
+        document.addEventListener("touchstart", touchHandler, true);
+        document.addEventListener("touchmove", touchHandler, true);
+        document.addEventListener("touchend", touchHandler, true);
+        document.addEventListener("touchcancel", touchHandler, true);
+    })();
+
     const levels = [
         { y_div: 3, add_v: 1, target_r: 6 },
         { y_div: 4, add_v: 2, target_r: 5 },
