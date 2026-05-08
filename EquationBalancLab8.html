@@ -48,8 +48,14 @@
         .filled-item { width: 32px; height: 32px; background: var(--item-v); border-radius: 4px; position: absolute; bottom: 2px; border: 1px solid white; }
         
         .full-y { width: 100px; height: 100px; background: var(--y-color); border: 4px solid white; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 45px; color: white; font-weight: bold; }
-        /* 在這裡加入了 user-select: none 防止 iPad 選取文字而無法拖動 */
-        .unit { width: 40px; height: 40px; background: var(--item-v); border-radius: 6px; color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 16px; user-select: none; -webkit-user-select: none; }
+        
+        /* 修正：加入 touch-action: none 防止系統攔截拖曳動作，並加入 -webkit-touch-callout 防止長按彈出菜單 */
+        .unit { 
+            width: 40px; height: 40px; background: var(--item-v); border-radius: 6px; color: white; 
+            display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 16px; 
+            user-select: none; -webkit-user-select: none; 
+            touch-action: none; -webkit-touch-callout: none;
+        }
 
         .controls { margin-top: 20px; display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
         button { padding: 10px 20px; font-size: 16px; border-radius: 8px; border: none; background: #3498db; color: white; font-weight: bold; cursor: pointer; }
@@ -95,13 +101,19 @@
 </div>
 
 <script>
-    // iPad Touch Support: 強化版映射腳本，確保拖拽和點擊同時生效
+    // iPad Touch Support: 修正版
     (function() {
         function touchHandler(event) {
             var touches = event.changedTouches, first = touches[0], type = "";
             switch(event.type) {
                 case "touchstart": type = "mousedown"; break;
-                case "touchmove":  type = "mousemove"; break;        
+                case "touchmove":  
+                    type = "mousemove"; 
+                    // 修正：在拖動時防止頁面捲動，這樣才能「拖得郁」
+                    if (event.target.classList.contains('unit')) {
+                        event.preventDefault();
+                    }
+                    break;        
                 case "touchend":   type = "mouseup";   break;
                 default: return;
             }
@@ -114,17 +126,17 @@
 
             first.target.dispatchEvent(simulatedEvent);
 
-            // 針對 iPad 拖拽的 DataTransfer 模擬處理
             if (type === "mousedown" && event.target.getAttribute("draggable")) {
                 const ev = new Event('dragstart');
                 ev.dataTransfer = { setData: function(k, v) { this.data = v; }, getData: function() { return this.data; } };
                 event.target.dispatchEvent(ev);
             }
         }
-        document.addEventListener("touchstart", touchHandler, true);
-        document.addEventListener("touchmove", touchHandler, true);
-        document.addEventListener("touchend", touchHandler, true);
-        document.addEventListener("touchcancel", touchHandler, true);
+        // 注意：必須將 passive 設為 false，preventDefault 才會生效
+        document.addEventListener("touchstart", touchHandler, {passive: false, capture: true});
+        document.addEventListener("touchmove", touchHandler, {passive: false, capture: true});
+        document.addEventListener("touchend", touchHandler, {passive: false, capture: true});
+        document.addEventListener("touchcancel", touchHandler, {passive: false, capture: true});
     })();
 
     let parts = [{ filled: 0 }]; 
