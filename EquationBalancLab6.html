@@ -50,7 +50,6 @@
         }
         .beam { width: 100%; height: 8px; background: #bdc3c7; border-radius: 4px; display: flex; justify-content: space-between; }
 
-        /* 修改：增加 overflow-y 確保法碼多時可滾動，不被切掉 */
         .pan { 
             width: 280px; background: rgba(255,255,255,0.98); border: 3px solid #34495e; 
             border-top: none; border-radius: 0 0 15px 15px; padding: 10px; 
@@ -157,24 +156,27 @@
 </div>
 
 <script>
-    // iPad 影分身拖放引擎
+    // iPad 影分身拖放引擎 (修正殘影加強版)
     (function() {
         let ghost = null;
         let activeEl = null;
-        let isSpawning = false;
 
         document.addEventListener('touchstart', function(e) {
             const el = e.target.closest('#spawn-item, .item, .y-block');
             if (!el) return;
             
-            activeEl = el;
-            isSpawning = (el.id === 'spawn-item');
+            // 開始前先清理所有可能殘留嘅 ghost
+            const oldGhosts = document.querySelectorAll('.ghost');
+            oldGhosts.forEach(og => og.remove());
             
+            activeEl = el;
             const touch = e.touches[0];
+            
             ghost = el.cloneNode(true);
             ghost.id = "ghost-temp";
             ghost.classList.add('ghost');
-            // 如果是 y-block，確保裡面有 gap-box 的話也要複製
+            ghost.style.pointerEvents = 'none'; 
+            
             document.body.appendChild(ghost);
             moveGhost(touch.clientX, touch.clientY);
         }, {passive: false});
@@ -183,48 +185,56 @@
             if (!ghost) return;
             const touch = e.touches[0];
             moveGhost(touch.clientX, touch.clientY);
-            e.preventDefault();
+            e.preventDefault(); 
         }, {passive: false});
 
         document.addEventListener('touchend', function(e) {
             if (!ghost) return;
-            const touch = e.changedTouches[0];
-            const targetPanL = document.getElementById('pan-L');
-            const targetPanR = document.getElementById('pan-R');
-            const trash = document.getElementById('trash');
             
-            // 檢查是否落在籃子 (slot) 裡
-            let droppedInSlot = null;
-            document.querySelectorAll('.group-slot').forEach(slot => {
-                if (isOver(touch.clientX, touch.clientY, slot)) droppedInSlot = slot;
-            });
+            try {
+                const touch = e.changedTouches[0];
+                const targetPanL = document.getElementById('pan-L');
+                const targetPanR = document.getElementById('pan-R');
+                const trash = document.getElementById('trash');
+                
+                let droppedInSlot = null;
+                document.querySelectorAll('.group-slot').forEach(slot => {
+                    if (isOver(touch.clientX, touch.clientY, slot)) droppedInSlot = slot;
+                });
 
-            if (isOver(touch.clientX, touch.clientY, trash)) {
-                fakeDrop(activeEl.id, 'trash');
-            } else if (droppedInSlot) {
-                const side = droppedInSlot.id.split('-')[1]; // s-L-0 -> L
-                fakeDrop(activeEl.id, side, droppedInSlot.id);
-            } else if (isOver(touch.clientX, touch.clientY, targetPanL)) {
-                fakeDrop(activeEl.id, 'L');
-            } else if (isOver(touch.clientX, touch.clientY, targetPanR)) {
-                fakeDrop(activeEl.id, 'R');
+                if (isOver(touch.clientX, touch.clientY, trash)) {
+                    fakeDrop(activeEl.id, 'trash');
+                } else if (droppedInSlot) {
+                    const side = droppedInSlot.id.split('-')[1];
+                    fakeDrop(activeEl.id, side, droppedInSlot.id);
+                } else if (isOver(touch.clientX, touch.clientY, targetPanL)) {
+                    fakeDrop(activeEl.id, 'L');
+                } else if (isOver(touch.clientX, touch.clientY, targetPanR)) {
+                    fakeDrop(activeEl.id, 'R');
+                }
+            } catch (err) {
+                console.error("Drop error:", err);
+            } finally {
+                if (ghost && ghost.parentNode) {
+                    ghost.remove();
+                }
+                ghost = null;
+                activeEl = null;
             }
-
-            ghost.remove();
-            ghost = null;
         });
 
         function moveGhost(x, y) {
+            if (!ghost) return;
             ghost.style.left = (x - ghost.offsetWidth/2) + 'px';
             ghost.style.top = (y - ghost.offsetHeight/2) + 'px';
         }
 
         function isOver(x, y, el) {
+            if (!el) return false;
             const rect = el.getBoundingClientRect();
             return x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom;
         }
 
-        // 橋接影分身到原本的邏輯函數
         function fakeDrop(id, target, slotId) {
             const mockEvent = { 
                 preventDefault: () => {}, 
