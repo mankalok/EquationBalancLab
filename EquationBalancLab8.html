@@ -8,20 +8,9 @@
         :root { --y-color: #e67e22; --y-light: #fbe5d6; --item-v: #9b59b6; }
         body { font-family: "Microsoft JhengHei", sans-serif; background: #f4f7f6; display: flex; flex-direction: column; align-items: center; padding: 10px; margin: 0; touch-action: manipulation; }
         
-        /* 修改：將按鈕固定在右上角 */
         .btn-index { 
-            position: fixed; 
-            top: 20px; 
-            right: 20px; 
-            background: #2c3e50; 
-            z-index: 9999; 
-            padding: 10px 20px; 
-            font-size: 16px; 
-            border-radius: 8px; 
-            border: none; 
-            color: white; 
-            font-weight: bold; 
-            cursor: pointer;
+            position: fixed; top: 20px; right: 20px; background: #2c3e50; z-index: 9999; 
+            padding: 10px 20px; font-size: 16px; border-radius: 8px; border: none; color: white; font-weight: bold; cursor: pointer;
             box-shadow: 0 2px 5px rgba(0,0,0,0.2);
         }
 
@@ -49,12 +38,19 @@
         
         .full-y { width: 100px; height: 100px; background: var(--y-color); border: 4px solid white; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 45px; color: white; font-weight: bold; }
         
-        /* 修正：加入 touch-action: none 防止系統攔截拖曳動作，並加入 -webkit-touch-callout 防止長按彈出菜單 */
         .unit { 
             width: 40px; height: 40px; background: var(--item-v); border-radius: 6px; color: white; 
             display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 16px; 
             user-select: none; -webkit-user-select: none; 
-            touch-action: none; -webkit-touch-callout: none;
+            touch-action: none; cursor: grab;
+        }
+        .unit:active { cursor: grabbing; }
+
+        /* iPad 拖動時的影分身視覺效果 */
+        .ghost {
+            position: fixed; pointer-events: none; opacity: 0.7; z-index: 10000;
+            width: 40px; height: 40px; background: var(--item-v); border-radius: 6px;
+            color: white; display: flex; align-items: center; justify-content: center; font-weight: bold;
         }
 
         .controls { margin-top: 20px; display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
@@ -77,21 +73,21 @@
         <div id="balance-container">
             <div id="balance-sign">=</div>
             <div id="beam">
-                <div class="pan" id="left-pan" ondragover="event.preventDefault()" ondrop="handleDrop(event, 'left')"></div>
-                <div class="pan" id="right-pan" ondragover="event.preventDefault()" ondrop="handleDrop(event, 'right')"></div>
+                <div class="pan" id="left-pan" ondragover="event.preventDefault()" ondrop="handleDropPC(event, 'left')"></div>
+                <div class="pan" id="right-pan" ondragover="event.preventDefault()" ondrop="handleDropPC(event, 'right')"></div>
             </div>
         </div>
 
         <div style="margin-top: 30px; display: flex; gap: 15px; align-items: center;">
             <span>拖動：</span>
-            <div class="unit" draggable="true" ondragstart="ev => ev.dataTransfer.setData('text', 'u')" id="u-source">1</div>
+            <div class="unit" draggable="true" ondragstart="drag(event)" id="u-source">1</div>
         </div>
 
         <div class="controls">
             <button style="background: #e67e22;" onclick="addOneSet()">兩邊多加一份</button>
             <button style="background: #95a5a6;" onclick="location.reload()">重新開始</button>
         </div>
-        <div class="hint">📱 iPad 提示：拖動「1」到天秤增加；點擊天秤內的物體可刪除</div>
+        <div class="hint">📱 iPad 提示：拖動「1」到天秤；點擊天秤內的物體可刪除</div>
     </div>
 
     <div class="step-col">
@@ -101,53 +97,17 @@
 </div>
 
 <script>
-    // iPad Touch Support: 修正版
-    (function() {
-        function touchHandler(event) {
-            var touches = event.changedTouches, first = touches[0], type = "";
-            switch(event.type) {
-                case "touchstart": type = "mousedown"; break;
-                case "touchmove":  
-                    type = "mousemove"; 
-                    // 修正：在拖動時防止頁面捲動，這樣才能「拖得郁」
-                    if (event.target.classList.contains('unit')) {
-                        event.preventDefault();
-                    }
-                    break;        
-                case "touchend":   type = "mouseup";   break;
-                default: return;
-            }
-
-            var simulatedEvent = document.createEvent("MouseEvent");
-            simulatedEvent.initMouseEvent(type, true, true, window, 1, 
-                              first.screenX, first.screenY, 
-                              first.clientX, first.clientY, false, 
-                              false, false, false, 0, null);
-
-            first.target.dispatchEvent(simulatedEvent);
-
-            if (type === "mousedown" && event.target.getAttribute("draggable")) {
-                const ev = new Event('dragstart');
-                ev.dataTransfer = { setData: function(k, v) { this.data = v; }, getData: function() { return this.data; } };
-                event.target.dispatchEvent(ev);
-            }
-        }
-        // 注意：必須將 passive 設為 false，preventDefault 才會生效
-        document.addEventListener("touchstart", touchHandler, {passive: false, capture: true});
-        document.addEventListener("touchmove", touchHandler, {passive: false, capture: true});
-        document.addEventListener("touchend", touchHandler, {passive: false, capture: true});
-        document.addEventListener("touchcancel", touchHandler, {passive: false, capture: true});
-    })();
-
+    // --- 核心邏輯數據 ---
     let parts = [{ filled: 0 }]; 
     let extraLeftOnes = 0; 
     let rightOnes = 3;    
     const initialRight = 3;
 
-    function handleDrop(ev, pan) {
-        ev.preventDefault();
-        if (pan === 'right') rightOnes++;
-        else {
+    // --- 拖放處理 (通用邏輯) ---
+    function executeAddOne(pan) {
+        if (pan === 'right') {
+            rightOnes++;
+        } else {
             let target = parts.find(p => p.filled < 2);
             if (target) target.filled++;
             else extraLeftOnes++;
@@ -155,6 +115,59 @@
         render();
     }
 
+    // 電腦版處理
+    function drag(ev) { ev.dataTransfer.setData("text", "u"); }
+    function handleDropPC(ev, pan) {
+        ev.preventDefault();
+        executeAddOne(pan);
+    }
+
+    // --- iPad 專用觸控拖放引擎 ---
+    (function() {
+        const source = document.getElementById('u-source');
+        let ghost = null;
+
+        source.addEventListener('touchstart', function(e) {
+            const touch = e.touches[0];
+            ghost = document.createElement('div');
+            ghost.className = 'ghost';
+            ghost.innerText = '1';
+            document.body.appendChild(ghost);
+            updateGhost(touch.pageX, touch.pageY);
+        }, {passive: false});
+
+        document.addEventListener('touchmove', function(e) {
+            if (!ghost) return;
+            const touch = e.touches[0];
+            updateGhost(touch.pageX, touch.pageY);
+            e.preventDefault(); // 禁止捲動
+        }, {passive: false});
+
+        document.addEventListener('touchend', function(e) {
+            if (!ghost) return;
+            const touch = e.changedTouches[0];
+            const leftPan = document.getElementById('left-pan');
+            const rightPan = document.getElementById('right-pan');
+
+            if (isOver(touch.pageX, touch.pageY, leftPan)) executeAddOne('left');
+            else if (isOver(touch.pageX, touch.pageY, rightPan)) executeAddOne('right');
+
+            ghost.remove();
+            ghost = null;
+        });
+
+        function updateGhost(x, y) {
+            ghost.style.left = (x - 20) + 'px';
+            ghost.style.top = (y - 20) + 'px';
+        }
+
+        function isOver(x, y, el) {
+            const rect = el.getBoundingClientRect();
+            return x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom;
+        }
+    })();
+
+    // --- 畫面渲染與按鈕邏輯 (保持原樣) ---
     function addOneSet() {
         parts.push({ filled: parts[0].filled }); 
         rightOnes += (initialRight + parts[0].filled); 
