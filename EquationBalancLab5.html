@@ -2,14 +2,15 @@
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>方程探究：天秤平衡版</title>
     <style>
         :root { 
             --main-color: #3498db; --success-color: #2ecc71; --error-color: #e74c3c; 
             --item-y: #f39c12; --item-n: #9b59b6; --font-main: "Microsoft JhengHei", sans-serif;
         }
-        body { font-family: var(--font-main); background: #f0f3f6; display: flex; flex-direction: column; align-items: center; margin: 0; padding: 10px; position: relative; }
+        /* touch-action: none 防止 iPad 拖動時頁面跟住滑動 */
+        body { font-family: var(--font-main); background: #f0f3f6; display: flex; flex-direction: column; align-items: center; margin: 0; padding: 10px; position: relative; touch-action: none; }
 
         .index-btn { position: absolute; top: 15px; right: 15px; padding: 10px 18px; background: #34495e; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; z-index: 100; }
 
@@ -99,6 +100,26 @@
 </div>
 
 <script>
+    /* iPad 支援代碼：將觸摸事件模擬為滑鼠事件 */
+    (function() {
+        function touchHandler(event) {
+            var touches = event.changedTouches, first = touches[0], type = "";
+            switch(event.type) {
+                case "touchstart": type = "mousedown"; break;
+                case "touchmove":  type = "mousemove"; break;        
+                case "touchend":   type = "mouseup";   break;
+                default:           return;
+            }
+            var simulatedEvent = document.createEvent("MouseEvent");
+            simulatedEvent.initMouseEvent(type, true, true, window, 1, first.screenX, first.screenY, first.clientX, first.clientY, false, false, false, false, 0, null);
+            first.target.dispatchEvent(simulatedEvent);
+        }
+        document.addEventListener("touchstart", touchHandler, true);
+        document.addEventListener("touchmove", touchHandler, true);
+        document.addEventListener("touchend", touchHandler, true);
+        document.addEventListener("touchcancel", touchHandler, true);
+    })();
+
     const questions = [
         { a: 3, b: 4, c: 10, ans: 2 },
         { a: 2, b: 3, c: 7, ans: 2 }
@@ -158,15 +179,16 @@
         const item = document.createElement('div');
         item.className = `item ${cls}`;
         item.innerText = txt;
-        item.draggable = true;
+        // iPad 支援：將 ondragstart 改用 onmousedown 觸發
+        item.onmousedown = (e) => { dragged = item; };
         item.dataset.side = side;
         item.dataset.type = (txt === 'Y' ? 'y' : 'n');
-        item.ondragstart = (e) => { dragged = item; };
         document.getElementById(parentId).appendChild(item);
     }
 
-    document.body.ondragover = (e) => e.preventDefault();
-    document.body.ondrop = (e) => {
+    // 將 ondrop 改用 onmouseup 配合觸摸模擬
+    document.body.onmouseup = (e) => {
+        if (!dragged) return;
         const trash = document.getElementById('trash');
         const trashRect = trash.getBoundingClientRect();
         const poolL = document.getElementById('pool-L').getBoundingClientRect();
@@ -193,6 +215,7 @@
                 document.getElementById('pool-' + dragged.dataset.side).appendChild(dragged);
             }
         }
+        dragged = null;
         updateUI();
     };
 
@@ -231,7 +254,6 @@
             const okL = checkSlot(`slot-L-${i}`, 1, 'y', `mark-L-${i}`);
             const okR = checkSlot(`slot-R-${i}`, currentQ.ans, 'n', `mark-R-${i}`);
             if (!okL || !okR) allCorrect = false;
-            // 每次 UI 更新都重置透明度
             document.getElementById(`cont-L-${i}`).style.opacity = '1';
             document.getElementById(`cont-R-${i}`).style.opacity = '1';
         }
@@ -243,7 +265,6 @@
             document.getElementById('row3-r').innerText = currentQ.ans;
             document.getElementById('msg').innerText = "🎉 完美分組！Y 的解就在其中一個籃子裡。";
             
-            // 重要：淡化其餘籃子，突顯第一組答案
             for (let i = 1; i < currentQ.a; i++) {
                 document.getElementById(`cont-L-${i}`).style.opacity = '0.2';
                 document.getElementById(`cont-R-${i}`).style.opacity = '0.2';
