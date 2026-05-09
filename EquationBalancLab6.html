@@ -9,7 +9,11 @@
             --main-color: #3498db; --success-color: #2ecc71; --error-color: #e74c3c; 
             --y-color: #f39c12; --item-n: #9b59b6; --font-main: "Microsoft JhengHei", sans-serif;
         }
-        body { font-family: var(--font-main); background: #f8f9fa; display: flex; flex-direction: column; align-items: center; margin: 0; padding: 10px; touch-action: none; }
+        body { 
+            font-family: var(--font-main); background: #f8f9fa; display: flex; flex-direction: column; 
+            align-items: center; margin: 0; padding: 10px; touch-action: none; 
+            user-select: none; -webkit-user-select: none;
+        }
 
         .back-to-index {
             position: fixed; top: 20px; right: 20px; padding: 10px 20px;
@@ -35,7 +39,7 @@
         .highlight-blue { color: var(--main-color); }
         .highlight-green { color: var(--success-color); }
 
-        #stage { position: relative; width: 100%; max-width: 700px; height: 400px; display: flex; justify-content: center; margin-top: 10px; }
+        #stage { position: relative; width: 100%; max-width: 700px; height: 440px; display: flex; justify-content: center; margin-top: 10px; }
         .pillar { position: absolute; bottom: 40px; width: 12px; height: 180px; background: #95a5a6; border-radius: 6px; }
         .base { position: absolute; bottom: 30px; width: 120px; height: 10px; background: #2c3e50; border-radius: 5px; }
         
@@ -46,17 +50,19 @@
         }
         .beam { width: 100%; height: 8px; background: #bdc3c7; border-radius: 4px; display: flex; justify-content: space-between; }
 
+        /* 修改：增加 overflow-y 確保法碼多時可滾動，不被切掉 */
         .pan { 
             width: 280px; background: rgba(255,255,255,0.98); border: 3px solid #34495e; 
             border-top: none; border-radius: 0 0 15px 15px; padding: 10px; 
-            min-height: 260px; display: flex; flex-direction: column; 
+            min-height: 280px; max-height: 320px; overflow-y: auto; 
+            display: flex; flex-direction: column; 
         }
         
         .y-pool { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; min-height: 65px; margin-bottom: 10px; }
         .y-block { 
             position: relative; width: 55px; height: 55px; background: var(--y-color); 
             border-radius: 6px; display: flex; align-items: center; justify-content: center; 
-            font-size: 22px; color: white; font-weight: bold; cursor: grab;
+            font-size: 22px; color: white; font-weight: bold; cursor: grab; touch-action: none;
         }
         
         .gap-slot {
@@ -66,19 +72,24 @@
         }
         .filled-dot { width: 9px; height: 9px; background: var(--item-n); border-radius: 1px; }
 
-        .baskets { border-top: 2px dashed #eee; padding-top: 10px; margin-top: auto; display: flex; flex-direction: column; gap: 6px; }
+        .baskets { border-top: 2px dashed #eee; padding-top: 10px; margin-top: 10px; display: flex; flex-direction: column; gap: 6px; }
         .slot-row { display: flex; align-items: center; gap: 8px; transition: 0.4s; }
         .group-slot { 
             flex-grow: 1; border: 2px dashed #ccc; border-radius: 8px; 
             min-height: 50px; display: flex; flex-wrap: wrap; gap: 4px; padding: 6px; background: white;
         }
 
-        /* 修改：將法碼 (1) 整大，方便 iPad 操作 */
         .item { 
             width: 45px; height: 45px; border-radius: 8px; display: flex; 
             align-items: center; justify-content: center; color: white; 
             font-weight: bold; cursor: grab; font-size: 22px; background: var(--item-n);
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2); touch-action: none;
+        }
+
+        /* 影分身樣式 */
+        .ghost {
+            position: fixed; pointer-events: none; opacity: 0.8; z-index: 9999;
+            transform: scale(1.1); box-shadow: 0 10px 20px rgba(0,0,0,0.3);
         }
 
         .controls { width: 95%; max-width: 600px; display: grid; grid-template-columns: 1fr 1.5fr 1fr; gap: 15px; margin-top: 20px; }
@@ -146,25 +157,87 @@
 </div>
 
 <script>
+    // iPad 影分身拖放引擎
     (function() {
-        var dragSrcEl = null;
-        function touchHandler(event) {
-            var touches = event.changedTouches, first = touches[0], type = "";
-            switch(event.type) {
-                case "touchstart": type = "mousedown"; break;
-                case "touchmove":  type = "mousemove"; break;        
-                case "touchend":   type = "mouseup";   break;
-                default:           return;
+        let ghost = null;
+        let activeEl = null;
+        let isSpawning = false;
+
+        document.addEventListener('touchstart', function(e) {
+            const el = e.target.closest('#spawn-item, .item, .y-block');
+            if (!el) return;
+            
+            activeEl = el;
+            isSpawning = (el.id === 'spawn-item');
+            
+            const touch = e.touches[0];
+            ghost = el.cloneNode(true);
+            ghost.id = "ghost-temp";
+            ghost.classList.add('ghost');
+            // 如果是 y-block，確保裡面有 gap-box 的話也要複製
+            document.body.appendChild(ghost);
+            moveGhost(touch.clientX, touch.clientY);
+        }, {passive: false});
+
+        document.addEventListener('touchmove', function(e) {
+            if (!ghost) return;
+            const touch = e.touches[0];
+            moveGhost(touch.clientX, touch.clientY);
+            e.preventDefault();
+        }, {passive: false});
+
+        document.addEventListener('touchend', function(e) {
+            if (!ghost) return;
+            const touch = e.changedTouches[0];
+            const targetPanL = document.getElementById('pan-L');
+            const targetPanR = document.getElementById('pan-R');
+            const trash = document.getElementById('trash');
+            
+            // 檢查是否落在籃子 (slot) 裡
+            let droppedInSlot = null;
+            document.querySelectorAll('.group-slot').forEach(slot => {
+                if (isOver(touch.clientX, touch.clientY, slot)) droppedInSlot = slot;
+            });
+
+            if (isOver(touch.clientX, touch.clientY, trash)) {
+                fakeDrop(activeEl.id, 'trash');
+            } else if (droppedInSlot) {
+                const side = droppedInSlot.id.split('-')[1]; // s-L-0 -> L
+                fakeDrop(activeEl.id, side, droppedInSlot.id);
+            } else if (isOver(touch.clientX, touch.clientY, targetPanL)) {
+                fakeDrop(activeEl.id, 'L');
+            } else if (isOver(touch.clientX, touch.clientY, targetPanR)) {
+                fakeDrop(activeEl.id, 'R');
             }
-            var simulatedEvent = document.createEvent("MouseEvent");
-            simulatedEvent.initMouseEvent(type, true, true, window, 1, first.screenX, first.screenY, first.clientX, first.clientY, false, false, false, false, 0, null);
-            first.target.dispatchEvent(simulatedEvent);
-            if (type === "mousemove") event.preventDefault();
+
+            ghost.remove();
+            ghost = null;
+        });
+
+        function moveGhost(x, y) {
+            ghost.style.left = (x - ghost.offsetWidth/2) + 'px';
+            ghost.style.top = (y - ghost.offsetHeight/2) + 'px';
         }
-        document.addEventListener("touchstart", touchHandler, true);
-        document.addEventListener("touchmove", touchHandler, true);
-        document.addEventListener("touchend", touchHandler, true);
-        document.addEventListener("touchcancel", touchHandler, true);
+
+        function isOver(x, y, el) {
+            const rect = el.getBoundingClientRect();
+            return x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom;
+        }
+
+        // 橋接影分身到原本的邏輯函數
+        function fakeDrop(id, target, slotId) {
+            const mockEvent = { 
+                preventDefault: () => {}, 
+                dataTransfer: { getData: () => id },
+                target: slotId ? document.getElementById(slotId) : null,
+                stopPropagation: () => {}
+            };
+            if (target === 'trash') {
+                dropTrash(mockEvent);
+            } else {
+                handleDrop(mockEvent, target, slotId);
+            }
+        }
     })();
 
     const levels = [
@@ -190,7 +263,7 @@
         const yP = document.getElementById('y-pool'); yP.innerHTML = '';
         for(let i=0; i<lv.a; i++) {
             const y = document.createElement('div');
-            y.className = 'y-block'; y.innerText = 'Y'; y.id = 'y'+i; y.draggable = true; y.ondragstart = drag;
+            y.className = 'y-block'; y.innerText = 'Y'; y.id = 'y'+i+Date.now(); y.draggable = true; y.ondragstart = drag;
             if(i === lv.a-1) {
                 const g = document.createElement('div'); g.className = 'gap-slot'; g.id = 'gap-box';
                 y.appendChild(g);
@@ -231,7 +304,7 @@
     function drag(e) { e.dataTransfer.setData("text", e.target.id); }
 
     function handleDrop(e, side, slotId) {
-        e.preventDefault();
+        if(e.preventDefault) e.preventDefault();
         const id = e.dataTransfer.getData("text");
         const lv = levels[cur];
 
