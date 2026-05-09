@@ -9,8 +9,11 @@
             --main-color: #3498db; --success-color: #2ecc71; --error-color: #e74c3c; 
             --item-y: #f39c12; --item-n: #9b59b6; --font-main: "Microsoft JhengHei", sans-serif;
         }
-        /* touch-action: none 防止 iPad 拖動時頁面跟住滑動 */
-        body { font-family: var(--font-main); background: #f0f3f6; display: flex; flex-direction: column; align-items: center; margin: 0; padding: 10px; position: relative; touch-action: none; }
+        body { 
+            font-family: var(--font-main); background: #f0f3f6; display: flex; flex-direction: column; 
+            align-items: center; margin: 0; padding: 10px; position: relative; touch-action: none; 
+            user-select: none; -webkit-user-select: none;
+        }
 
         .index-btn { position: absolute; top: 15px; right: 15px; padding: 10px 18px; background: #34495e; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; z-index: 100; }
 
@@ -24,25 +27,38 @@
         .op-red { color: var(--error-color); margin-left: 5px; }
         .div-red { color: var(--error-color); font-size: 24px; margin-left: 5px; font-weight: normal; }
 
-        #stage { position: relative; width: 100%; max-width: 650px; height: 350px; display: flex; justify-content: center; margin-top: 20px; }
-        .pillar { position: absolute; bottom: 40px; width: 16px; height: 180px; background: #95a5a6; border-radius: 8px; }
+        /* 調整：增加 Stage 高度，確保長盤有空間擺動 */
+        #stage { position: relative; width: 100%; max-width: 650px; height: 500px; display: flex; justify-content: center; margin-top: 20px; }
+        .pillar { position: absolute; bottom: 40px; width: 16px; height: 300px; background: #95a5a6; border-radius: 8px; }
         .base { position: absolute; bottom: 30px; width: 120px; height: 12px; background: #2c3e50; border-radius: 6px; }
         .beam-wrap { position: absolute; top: 50px; width: 580px; transition: transform 0.4s ease-out; z-index: 2; transform-origin: center 4px; }
         .beam { width: 100%; height: 8px; background: #bdc3c7; border-radius: 4px; display: flex; justify-content: space-between; }
 
-        .pan { width: 260px; background: rgba(255,255,255,0.9); border: 3px solid #34495e; border-top: none; border-radius: 0 0 15px 15px; padding: 10px; min-height: 220px; display: flex; flex-direction: column; }
-        .init-pool { min-height: 45px; display: flex; flex-wrap: wrap; gap: 5px; justify-content: center; border-bottom: 1px dashed #ccc; margin-bottom: 8px; }
-        .slot-container { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; transition: opacity 0.5s; }
-        .group-slot { flex-grow: 1; border: 2px dashed #bdc3c7; border-radius: 8px; min-height: 45px; display: flex; flex-wrap: wrap; gap: 4px; padding: 4px; background: white; }
+        /* 調整：盤子不再捲動，直接撐開，確保虛線籃清楚可見 */
+        .pan { 
+            width: 260px; background: rgba(255,255,255,0.9); border: 3px solid #34495e; 
+            border-top: none; border-radius: 0 0 15px 15px; padding: 10px; 
+            min-height: 350px; /* 加高最低高度 */
+            display: flex; flex-direction: column; 
+        }
+        
+        .init-pool { min-height: 60px; display: flex; flex-wrap: wrap; gap: 5px; justify-content: center; border-bottom: 1px dashed #ccc; margin-bottom: 15px; padding: 5px; }
+        .slot-container { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; transition: opacity 0.5s; }
+        .group-slot { flex-grow: 1; border: 2px dashed #bdc3c7; border-radius: 8px; min-height: 50px; display: flex; flex-wrap: wrap; gap: 4px; padding: 6px; background: white; }
         .status-mark { width: 25px; font-size: 20px; text-align: center; }
 
-        .item { width: 34px; height: 34px; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; cursor: grab; user-select: none; touch-action: none; }
+        .item { width: 34px; height: 34px; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; cursor: grab; touch-action: none; }
         .item-y { background: var(--item-y); }
         .item-n { background: var(--item-n); }
 
+        .ghost {
+            position: fixed; pointer-events: none; opacity: 0.7; z-index: 10000;
+            transform: scale(1.1); box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+
         .trash-area { width: 90%; max-width: 450px; height: 65px; border: 2px dashed var(--error-color); border-radius: 12px; display: flex; flex-wrap: wrap; gap: 4px; align-items: center; justify-content: center; color: var(--error-color); margin: 15px 0; font-weight: bold; overflow: hidden; padding: 5px; }
         
-        .controls { display: flex; gap: 10px; }
+        .controls { display: flex; gap: 10px; margin-bottom: 20px; }
         button { padding: 12px 20px; border: none; border-radius: 8px; background: var(--main-color); color: white; cursor: pointer; font-weight: bold; font-size: 16px; }
         #msg { height: 35px; font-weight: bold; color: #2c3e50; font-size: 18px; margin: 10px 0; }
     </style>
@@ -92,7 +108,7 @@
     </div>
 </div>
 
-<div class="trash-area" id="trash">🗑️ 拖到這裡移除 (或拉回上方Pool還原)</div>
+<div class="trash-area" id="trash">🗑️ 拖到這裡移除 (或拉回上方池子還原)</div>
 
 <div class="controls">
     <button onclick="initGame()">重新開始</button>
@@ -100,24 +116,81 @@
 </div>
 
 <script>
-    /* iPad 支援代碼：將觸摸事件模擬為滑鼠事件 */
+    /** iPad 影分身觸控引擎 - 保留不變 **/
     (function() {
-        function touchHandler(event) {
-            var touches = event.changedTouches, first = touches[0], type = "";
-            switch(event.type) {
-                case "touchstart": type = "mousedown"; break;
-                case "touchmove":  type = "mousemove"; break;        
-                case "touchend":   type = "mouseup";   break;
-                default:           return;
+        let ghost = null;
+        let sourceEl = null;
+
+        document.addEventListener('touchstart', function(e) {
+            const el = e.target.closest('.item');
+            if (!el) return;
+            sourceEl = el;
+            const touch = e.touches[0];
+            ghost = sourceEl.cloneNode(true);
+            ghost.classList.add('ghost');
+            document.body.appendChild(ghost);
+            updateGhost(touch.clientX, touch.clientY);
+        }, {passive: false});
+
+        document.addEventListener('touchmove', function(e) {
+            if (!ghost) return;
+            const touch = e.touches[0];
+            updateGhost(touch.clientX, touch.clientY);
+            e.preventDefault(); 
+        }, {passive: false});
+
+        document.addEventListener('touchend', function(e) {
+            if (!ghost) return;
+            const touch = e.changedTouches[0];
+            const x = touch.clientX;
+            const y = touch.clientY;
+
+            const trash = document.getElementById('trash');
+            const poolL = document.getElementById('pool-L');
+            const poolR = document.getElementById('pool-R');
+            const side = sourceEl.dataset.side;
+
+            if (isOver(x, y, trash)) {
+                if (sourceEl.dataset.type === 'n') {
+                    trash.appendChild(sourceEl);
+                } else {
+                    document.getElementById('msg').innerText = "❌ Y 不能丟掉！";
+                    document.getElementById('pool-' + side).appendChild(sourceEl);
+                }
+            } else if (isOver(x, y, (side === 'L' ? poolL : poolR))) {
+                document.getElementById('pool-' + side).appendChild(sourceEl);
+            } else {
+                let droppedInSlot = false;
+                document.querySelectorAll('.group-slot').forEach(slot => {
+                    if (isOver(x, y, slot) && slot.id.includes(`slot-${side}`)) {
+                        slot.appendChild(sourceEl);
+                        droppedInSlot = true;
+                    }
+                });
+                if (!droppedInSlot) {
+                    document.getElementById('pool-' + side).appendChild(sourceEl);
+                }
             }
-            var simulatedEvent = document.createEvent("MouseEvent");
-            simulatedEvent.initMouseEvent(type, true, true, window, 1, first.screenX, first.screenY, first.clientX, first.clientY, false, false, false, false, 0, null);
-            first.target.dispatchEvent(simulatedEvent);
+            ghost.remove();
+            ghost = null;
+            updateUI(); 
+        });
+
+        function updateGhost(x, y) {
+            ghost.style.left = (x - 17) + 'px'; 
+            ghost.style.top = (y - 17) + 'px';
         }
-        document.addEventListener("touchstart", touchHandler, true);
-        document.addEventListener("touchmove", touchHandler, true);
-        document.addEventListener("touchend", touchHandler, true);
-        document.addEventListener("touchcancel", touchHandler, true);
+
+        function isOver(x, y, el) {
+            if (!el) return false;
+            const rect = el.getBoundingClientRect();
+            return x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom;
+        }
+
+        document.addEventListener('mousedown', (e) => { 
+            const el = e.target.closest('.item');
+            if(el) { dragged = el; }
+        });
     })();
 
     const questions = [
@@ -130,7 +203,7 @@
     function initGame() {
         currentQ = questions[qIdx];
         removedL = 0; removedR = 0;
-        document.getElementById('trash').innerHTML = '🗑️ 拖到這裡移除 (或拉回上方Pool還原)';
+        document.getElementById('trash').innerHTML = '🗑️ 拖到這裡移除 (或拉回上方池子還原)';
         
         const titleL = `${currentQ.a}Y + ${currentQ.b}`;
         const titleR = `${currentQ.c}`;
@@ -179,45 +252,39 @@
         const item = document.createElement('div');
         item.className = `item ${cls}`;
         item.innerText = txt;
-        // iPad 支援：將 ondragstart 改用 onmousedown 觸發
-        item.onmousedown = (e) => { dragged = item; };
         item.dataset.side = side;
         item.dataset.type = (txt === 'Y' ? 'y' : 'n');
         document.getElementById(parentId).appendChild(item);
     }
 
-    // 將 ondrop 改用 onmouseup 配合觸摸模擬
+    // 滑鼠支持 (PC)
     document.body.onmouseup = (e) => {
         if (!dragged) return;
-        const trash = document.getElementById('trash');
-        const trashRect = trash.getBoundingClientRect();
-        const poolL = document.getElementById('pool-L').getBoundingClientRect();
-        const poolR = document.getElementById('pool-R').getBoundingClientRect();
         const x = e.clientX, y = e.clientY;
+        const trash = document.getElementById('trash');
+        const poolL = document.getElementById('pool-L');
+        const poolR = document.getElementById('pool-R');
+        const side = dragged.dataset.side;
 
-        if (x > trashRect.left && x < trashRect.right && y > trashRect.top && y < trashRect.bottom) {
-            if (dragged.dataset.type === 'n') {
-                trash.appendChild(dragged); 
-            } else {
-                document.getElementById('msg').innerText = "❌ Y 不能丟掉！";
-                document.getElementById('pool-' + dragged.dataset.side).appendChild(dragged);
-            }
-        } 
-        else if ((dragged.dataset.side === 'L' && x > poolL.left && x < poolL.right && y > poolL.top && y < poolL.bottom) ||
-                 (dragged.dataset.side === 'R' && x > poolR.left && x < poolR.right && y > poolR.top && y < poolR.bottom)) {
-            document.getElementById('pool-' + dragged.dataset.side).appendChild(dragged);
-        }
-        else {
+        if (isOverPC(x, y, trash)) {
+            if (dragged.dataset.type === 'n') trash.appendChild(dragged);
+            else document.getElementById('pool-' + side).appendChild(dragged);
+        } else {
             const target = document.elementFromPoint(x, y)?.closest('.group-slot');
-            if (target && target.id.includes(`slot-${dragged.dataset.side}`)) {
+            if (target && target.id.includes(`slot-${side}`)) {
                 target.appendChild(dragged);
             } else {
-                document.getElementById('pool-' + dragged.dataset.side).appendChild(dragged);
+                document.getElementById('pool-' + side).appendChild(dragged);
             }
         }
         dragged = null;
         updateUI();
     };
+
+    function isOverPC(x, y, el) {
+        const rect = el.getBoundingClientRect();
+        return x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom;
+    }
 
     function updateUI() {
         const trashItems = document.getElementById('trash').querySelectorAll('.item');
@@ -269,7 +336,6 @@
                 document.getElementById(`cont-L-${i}`).style.opacity = '0.2';
                 document.getElementById(`cont-R-${i}`).style.opacity = '0.2';
             }
-
             if (qIdx < questions.length - 1) document.getElementById('next-btn').style.display = 'block';
         } else {
             document.getElementById('row3').style.visibility = 'hidden';
