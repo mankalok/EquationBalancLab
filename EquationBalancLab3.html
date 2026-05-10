@@ -7,7 +7,6 @@
     <style>
         :root { --main-color: #3498db; --success-color: #2ecc71; --error-color: #e74c3c; --warn-color: #f39c12; --text-size: 26px; }
         
-        /* 修改：允許捲動，移除鎖死 */
         body { 
             font-family: "Microsoft JhengHei", sans-serif; 
             background: #f0f3f6; 
@@ -16,9 +15,9 @@
             align-items: center; 
             margin: 0; 
             padding: 10px; 
-            min-height: 100vh; /* 改為最小高度 */
-            overflow-x: hidden; /* 防止橫向溢出 */
-            overflow-y: auto;   /* 允許上下捲動 */
+            min-height: 100vh;
+            overflow-x: hidden;
+            overflow-y: auto; 
             position: relative; 
         }
 
@@ -32,29 +31,22 @@
         .center-eq { width: 40px; text-align: center; color: #95a5a6; }
         .div-text { color: var(--error-color); margin-left: 8px; opacity: 0; font-size: var(--text-size); transition: opacity 0.3s; }
 
-        /* 修改：增加容器處理縮放 */
         #stage { 
             position: relative; 
             width: 100%; 
             max-width: 600px; 
-            height: 480px; /* 固定高度防止縮放時排版跳動 */
+            height: 480px; 
             display: flex; 
             justify-content: center; 
             margin-top: 10px; 
             flex-shrink: 0; 
-            transform-origin: top center; /* 從頂部中心縮放 */
+            transform-origin: top center; 
         }
 
-        /* 修改：針對小螢幕進行自動縮放 */
-        @media (max-width: 600px) {
-            #stage { transform: scale(0.85); height: 410px; }
-        }
-        @media (max-width: 500px) {
-            #stage { transform: scale(0.75); height: 360px; }
-        }
-        @media (max-width: 400px) {
-            #stage { transform: scale(0.65); height: 310px; }
-        }
+        /* 修正：自動縮放時保持比例，但拖放邏輯會透過 JS 補償座標差 */
+        @media (max-width: 600px) { #stage { transform: scale(0.85); height: 410px; } }
+        @media (max-width: 500px) { #stage { transform: scale(0.75); height: 360px; } }
+        @media (max-width: 400px) { #stage { transform: scale(0.65); height: 310px; } }
 
         .pillar { position: absolute; bottom: 80px; width: 14px; height: 220px; background: #95a5a6; border-radius: 7px; z-index: 1; }
         .base { position: absolute; bottom: 70px; width: 100px; height: 10px; background: #2c3e50; border-radius: 5px; }
@@ -67,7 +59,7 @@
         .group-slot { 
             border: 2px dashed #bdc3c7; border-radius: 8px; margin: 4px 0; min-height: 55px; 
             display: flex; flex-wrap: wrap; justify-content: center; align-content: center; gap: 3px;
-            position: relative; background: rgba(255,255,255,0.7); transition: opacity 0.5s;
+            position: relative; background: rgba(255,255,255,0.7);
         }
 
         .bottom-pool {
@@ -78,12 +70,11 @@
         .slot-feedback { position: absolute; right: -30px; font-size: 20px; pointer-events: none; }
         .basket-l .slot-feedback { left: -30px; right: auto; }
 
-        /* 關鍵：物品保留 touch-action: none 確保拖動順暢 */
         .item { 
             width: 32px; height: 32px; border-radius: 6px; 
             display: flex; align-items: center; justify-content: center; 
             font-weight: bold; color: white; cursor: grab; 
-            touch-action: none; /* 拖件時唔會發動頁面捲動 */
+            touch-action: none; 
             z-index: 10; 
             box-shadow: 0 2px 4px rgba(0,0,0,0.2); 
             user-select: none;
@@ -93,9 +84,8 @@
         .item-v { background: #9b59b6; font-size: 14px; }
 
         #msg { margin: 10px 0; font-weight: bold; font-size: 18px; color: #2c3e50; text-align: center; min-height: 24px; padding: 0 10px; }
-        .btns { display: flex; gap: 15px; margin-top: 10px; margin-bottom: 30px; } /* 加底邊距方便捲動 */
+        .btns { display: flex; gap: 15px; margin-top: 10px; margin-bottom: 30px; }
         button { padding: 10px 25px; border: none; border-radius: 8px; background: var(--main-color); color: white; font-weight: bold; cursor: pointer; font-size: 16px; box-shadow: 0 4px #2980b9; }
-        button:active { transform: translateY(2px); box-shadow: 0 2px #2980b9; }
     </style>
 </head>
 <body>
@@ -181,6 +171,7 @@
             div.setPointerCapture(e.pointerId);
             div.style.position = 'fixed';
             div.style.zIndex = "2000";
+            // 修正：初始位置直接對準手指中心
             moveAt(e.clientX, e.clientY);
         };
 
@@ -194,8 +185,10 @@
         parent.appendChild(div);
     }
 
+    // 關鍵修正：唔再依賴 CSS transform 縮放後嘅物件內部坐標
     function moveAt(x, y) {
         if(!dragged) return;
+        // 使用 fixed 定位，直接將物件中心對準觸控點 (32px / 2 = 16)
         dragged.style.left = (x - 16) + 'px';
         dragged.style.top = (y - 16) + 'px';
     }
@@ -204,16 +197,19 @@
 
     window.onpointerup = e => {
         if(!dragged) return;
+        
+        // 判定目標：必須考慮到捲動同埋 fixed 定位
         dragged.style.visibility = 'hidden';
         const target = document.elementFromPoint(e.clientX, e.clientY);
         dragged.style.visibility = 'visible';
         
         const slot = target ? target.closest('.group-slot') : null;
-        const pool = target ? target.closest('.bottom-pool') : null;
         const side = dragged.dataset.side;
 
         dragged.style.position = 'static';
         dragged.style.zIndex = "10";
+        dragged.style.left = '';
+        dragged.style.top = '';
 
         if(slot && slot.dataset.side === side) {
             slot.appendChild(dragged);
@@ -239,7 +235,6 @@
     function checkLogic() {
         const lv = levels[cur];
         let allPass = true;
-
         for(let i=0; i<lv.y; i++) {
             const sl = document.getElementById(`slot-L-${i}`);
             const sr = document.getElementById(`slot-R-${i}`);
@@ -247,13 +242,10 @@
             const countV = sr.querySelectorAll('.item-v').length;
             const feedL = sl.querySelector('.slot-feedback');
             const feedR = sr.querySelector('.slot-feedback');
-
             if(countY === 1 && countV === lv.ans) {
                 feedL.innerText = '✅'; feedR.innerText = '✅';
-                feedL.style.color = feedR.style.color = 'var(--success-color)';
             } else {
                 feedL.innerText = '❌'; feedR.innerText = '❌';
-                feedL.style.color = feedR.style.color = 'var(--error-color)';
                 allPass = false;
             }
         }
@@ -264,7 +256,6 @@
             document.getElementById('ans-val').innerText = lv.ans;
             document.getElementById('l-div').style.opacity = 1;
             document.getElementById('r-div').style.opacity = 1;
-
             for(let i=1; i<lv.y; i++) {
                 document.getElementById(`slot-L-${i}`).style.opacity = "0.2";
                 document.getElementById(`slot-R-${i}`).style.opacity = "0.2";
