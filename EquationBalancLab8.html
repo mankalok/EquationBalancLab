@@ -2,16 +2,48 @@
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>方程探究：iPad 觸控優化版</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>方程探究：iPad 優化捲動版</title>
     <style>
         :root { --y-color: #e67e22; --y-light: #fbe5d6; --item-v: #9b59b6; }
-        body { font-family: "Microsoft JhengHei", sans-serif; background: #f4f7f6; display: flex; flex-direction: column; align-items: center; padding: 10px; margin: 0; touch-action: manipulation; }
+        
+        /* 修正：允許上下捲動，並確保內容有空間 */
+        body { 
+            font-family: "Microsoft JhengHei", sans-serif; 
+            background: #f4f7f6; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            padding: 10px; 
+            margin: 0; 
+            min-height: 100vh;
+            overflow-y: auto; /* 強制開啟捲動 */
+            touch-action: auto; /* 恢復正常捲動手勢 */
+        }
         
         .btn-index { 
-            position: fixed; top: 20px; right: 20px; background: #2c3e50; z-index: 9999; 
-            padding: 10px 20px; font-size: 16px; border-radius: 8px; border: none; color: white; font-weight: bold; cursor: pointer;
+            position: fixed; top: 10px; right: 10px; background: #2c3e50; z-index: 9999; 
+            padding: 8px 16px; font-size: 14px; border-radius: 8px; border: none; color: white; font-weight: bold; cursor: pointer;
             box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        /* 修正：響應式容器 - 在細畫面自動等比例縮小 */
+        .container-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            transform-origin: top center;
+        }
+
+        @media (max-width: 1100px) {
+            .header { flex-direction: column !important; align-items: center; }
+            .step-col { width: 90% !important; min-height: auto !important; margin-top: 20px; }
+            .container-wrapper { transform: scale(0.95); }
+        }
+
+        @media (max-width: 768px) {
+            .container-wrapper { transform: scale(0.85); }
         }
 
         .math-style { font-size: 24px; font-weight: bold; color: #2c3e50; display: flex; align-items: center; }
@@ -26,7 +58,7 @@
         .main-col { flex: 1.5; display: flex; flex-direction: column; align-items: center; }
         .step-col { flex: 1; background: white; border-radius: 15px; padding: 20px; box-shadow: 0 5px 20px rgba(0,0,0,0.05); border-top: 6px solid var(--y-color); min-height: 400px; }
 
-        #balance-container { position: relative; width: 100%; max-width: 500px; height: 250px; margin-top: 40px; transition: transform 0.5s; transform-origin: center 80px; }
+        #balance-container { position: relative; width: 100%; min-width: 450px; height: 250px; margin-top: 40px; transition: transform 0.5s; transform-origin: center 80px; }
         #beam { width: 100%; height: 12px; background: #95a5a6; border-radius: 6px; display: flex; justify-content: space-between; position: relative; }
         #balance-sign { position: absolute; top: -60px; left: 50%; transform: translateX(-50%); font-size: 40px; color: #7f8c8d; }
         
@@ -44,9 +76,7 @@
             user-select: none; -webkit-user-select: none; 
             touch-action: none; cursor: grab;
         }
-        .unit:active { cursor: grabbing; }
 
-        /* iPad 拖動時的影分身視覺效果 */
         .ghost {
             position: fixed; pointer-events: none; opacity: 0.7; z-index: 10000;
             width: 40px; height: 40px; background: var(--item-v); border-radius: 6px;
@@ -62,52 +92,52 @@
 
 <button class="btn-index" onclick="window.location.href='index.html'">返回主頁</button>
 
-<div class="math-style" style="background:white; padding:10px 30px; border-radius:50px; margin-bottom:10px; box-shadow:0 2px 10px rgba(0,0,0,0.05)">
-    <div class="left-part">題目：<div class="frac"><span class="top">y</span><span>4</span></div> - 2</div> 
-    <div class="eq-sign">=</div> 
-    <div class="right-part">3</div>
-</div>
-
-<div class="header">
-    <div class="main-col">
-        <div id="balance-container">
-            <div id="balance-sign">=</div>
-            <div id="beam">
-                <div class="pan" id="left-pan" ondragover="event.preventDefault()" ondrop="handleDropPC(event, 'left')"></div>
-                <div class="pan" id="right-pan" ondragover="event.preventDefault()" ondrop="handleDropPC(event, 'right')"></div>
-            </div>
-        </div>
-
-        <div style="margin-top: 30px; display: flex; gap: 15px; align-items: center;">
-            <span>拖動：</span>
-            <div class="unit" draggable="true" ondragstart="drag(event)" id="u-source">1</div>
-        </div>
-
-        <div class="controls">
-            <button style="background: #e67e22;" onclick="addOneSet()">兩邊多加一份</button>
-            <button style="background: #95a5a6;" onclick="location.reload()">重新開始</button>
-        </div>
-        <div class="hint">📱 iPad 提示：拖動「1」到天秤；點擊天秤內的物體可刪除</div>
+<div class="container-wrapper">
+    <div class="math-style" style="background:white; padding:10px 30px; border-radius:50px; margin-bottom:10px; box-shadow:0 2px 10px rgba(0,0,0,0.05)">
+        <div class="left-part">題目：<div class="frac"><span class="top">y</span><span>4</span></div> - 2</div> 
+        <div class="eq-sign">=</div> 
+        <div class="right-part">3</div>
     </div>
 
-    <div class="step-col">
-        <h4 style="text-align: center; margin: 0 0 15px 0; color: #7f8c8d;">解方程歷程</h4>
-        <div id="step-area"></div>
+    <div class="header">
+        <div class="main-col">
+            <div id="balance-container">
+                <div id="balance-sign">=</div>
+                <div id="beam">
+                    <div class="pan" id="left-pan" ondragover="event.preventDefault()" ondrop="handleDropPC(event, 'left')"></div>
+                    <div class="pan" id="right-pan" ondragover="event.preventDefault()" ondrop="handleDropPC(event, 'right')"></div>
+                </div>
+            </div>
+
+            <div style="margin-top: 30px; display: flex; gap: 15px; align-items: center;">
+                <span>拖動：</span>
+                <div class="unit" draggable="true" ondragstart="drag(event)" id="u-source">1</div>
+            </div>
+
+            <div class="controls">
+                <button style="background: #e67e22;" onclick="addOneSet()">兩邊多加一份</button>
+                <button style="background: #95a5a6;" onclick="location.reload()">重新開始</button>
+            </div>
+            <div class="hint">📱 iPad 提示：拖動「1」到天秤；點擊物體可刪除</div>
+        </div>
+
+        <div class="step-col">
+            <h4 style="text-align: center; margin: 0 0 15px 0; color: #7f8c8d;">解方程歷程</h4>
+            <div id="step-area"></div>
+        </div>
     </div>
 </div>
 
 <script>
-    // --- 核心邏輯數據 ---
+    // --- 核心邏輯數據保持不變 ---
     let parts = [{ filled: 0 }]; 
     let extraLeftOnes = 0; 
     let rightOnes = 3;    
     const initialRight = 3;
 
-    // --- 拖放處理 (通用邏輯) ---
     function executeAddOne(pan) {
-        if (pan === 'right') {
-            rightOnes++;
-        } else {
+        if (pan === 'right') { rightOnes++; } 
+        else {
             let target = parts.find(p => p.filled < 2);
             if (target) target.filled++;
             else extraLeftOnes++;
@@ -115,19 +145,16 @@
         render();
     }
 
-    // 電腦版處理
     function drag(ev) { ev.dataTransfer.setData("text", "u"); }
-    function handleDropPC(ev, pan) {
-        ev.preventDefault();
-        executeAddOne(pan);
-    }
+    function handleDropPC(ev, pan) { ev.preventDefault(); executeAddOne(pan); }
 
-    // --- iPad 專用觸控拖放引擎 ---
+    // --- iPad 專用觸控引擎 (維持原功能，不影響捲動) ---
     (function() {
         const source = document.getElementById('u-source');
         let ghost = null;
 
         source.addEventListener('touchstart', function(e) {
+            if (e.touches.length > 1) return; // 允許多指縮放頁面
             const touch = e.touches[0];
             ghost = document.createElement('div');
             ghost.className = 'ghost';
@@ -140,7 +167,7 @@
             if (!ghost) return;
             const touch = e.touches[0];
             updateGhost(touch.pageX, touch.pageY);
-            e.preventDefault(); // 禁止捲動
+            e.preventDefault(); // 拖動時禁止捲動，其餘時間可捲動
         }, {passive: false});
 
         document.addEventListener('touchend', function(e) {
@@ -148,10 +175,8 @@
             const touch = e.changedTouches[0];
             const leftPan = document.getElementById('left-pan');
             const rightPan = document.getElementById('right-pan');
-
             if (isOver(touch.pageX, touch.pageY, leftPan)) executeAddOne('left');
             else if (isOver(touch.pageX, touch.pageY, rightPan)) executeAddOne('right');
-
             ghost.remove();
             ghost = null;
         });
@@ -163,11 +188,12 @@
 
         function isOver(x, y, el) {
             const rect = el.getBoundingClientRect();
-            return x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom;
+            return x >= (rect.left + window.scrollX) && x <= (rect.right + window.scrollX) && 
+                   y >= (rect.top + window.scrollY) && y <= (rect.bottom + window.scrollY);
         }
     })();
 
-    // --- 畫面渲染與按鈕邏輯 (保持原樣) ---
+    // --- 渲染邏輯保持原樣 ---
     function addOneSet() {
         parts.push({ filled: parts[0].filled }); 
         rightOnes += (initialRight + parts[0].filled); 
@@ -184,20 +210,15 @@
         render();
     }
 
-    function removeFromRight() {
-        if (rightOnes > 0) rightOnes--;
-        render();
-    }
+    function removeFromRight() { if (rightOnes > 0) rightOnes--; render(); }
 
     function render() {
         const leftPan = document.getElementById('left-pan');
         const rightPan = document.getElementById('right-pan');
         leftPan.innerHTML = ''; rightPan.innerHTML = '';
-
         const completes = parts.filter(p => p.filled >= 2).length;
         const fullYCount = Math.floor(completes / 4);
         let tempParts = JSON.parse(JSON.stringify(parts));
-
         for(let i=0; i<fullYCount; i++) {
             const y = document.createElement('div');
             y.className = 'full-y'; y.innerText = 'Y';
@@ -206,7 +227,6 @@
             let removed = 0;
             tempParts = tempParts.filter(p => (removed < 4 && p.filled >= 2) ? (removed++, false) : true);
         }
-
         tempParts.forEach(p => {
             const div = document.createElement('div');
             div.className = 'block-y-part';
@@ -220,14 +240,12 @@
             }
             leftPan.appendChild(div);
         });
-
         for(let i=0; i<extraLeftOnes; i++) {
             const u = document.createElement('div');
             u.className = 'unit'; u.innerText = '1';
             u.onclick = () => removeFromLeft('extra');
             leftPan.appendChild(u);
         }
-
         for(let i=0; i<rightOnes; i++) {
             const u = document.createElement('div');
             u.className = 'unit'; u.innerText = '1';
@@ -241,11 +259,9 @@
         const sign = document.getElementById('balance-sign');
         const container = document.getElementById('balance-container');
         const area = document.getElementById('step-area');
-        
         let leftVal = parts.length * 3 + parts.reduce((s, p) => s + p.filled, 0) + extraLeftOnes;
         let diff = rightOnes - leftVal;
         container.style.transform = `rotate(${Math.max(-15, Math.min(15, diff * 3))}deg)`;
-        
         if (Math.abs(diff) < 0.1) {
             sign.innerText = "="; sign.style.color = "#2ecc71";
             let html = `<div class="step-row math-style"><div class="left-part"><div class="frac"><span class="top">y</span><span>4</span></div> - 2</div><div class="eq-sign">=</div><div class="right-part">3</div></div>`;
@@ -264,6 +280,5 @@
     }
     window.onload = render;
 </script>
-
 </body>
 </html>
