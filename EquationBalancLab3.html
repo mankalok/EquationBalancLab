@@ -169,9 +169,17 @@
         div.onpointerdown = e => {
             dragged = div;
             div.setPointerCapture(e.pointerId);
+            
+            // 取得物件目前的尺寸，並計算手指相對於物件左上角的偏移量
+            const rect = div.getBoundingClientRect();
+            div.dataset.offsetX = e.clientX - rect.left;
+            div.dataset.offsetY = e.clientY - rect.top;
+
             div.style.position = 'fixed';
             div.style.zIndex = "2000";
-            // 修正：初始位置直接對準手指中心
+            div.style.width = rect.width + 'px'; // 鎖定寬度
+            div.style.height = rect.height + 'px'; // 鎖定高度
+            
             moveAt(e.clientX, e.clientY);
         };
 
@@ -185,12 +193,13 @@
         parent.appendChild(div);
     }
 
-    // 關鍵修正：唔再依賴 CSS transform 縮放後嘅物件內部坐標
     function moveAt(x, y) {
         if(!dragged) return;
-        // 使用 fixed 定位，直接將物件中心對準觸控點 (32px / 2 = 16)
-        dragged.style.left = (x - 16) + 'px';
-        dragged.style.top = (y - 16) + 'px';
+        // 使用 offsetX/Y 補償，確保手指抓在哪裡物件就留在哪裡，不會跳動
+        const ox = parseFloat(dragged.dataset.offsetX);
+        const oy = parseFloat(dragged.dataset.offsetY);
+        dragged.style.left = (x - ox) + 'px';
+        dragged.style.top = (y - oy) + 'px';
     }
 
     window.onpointermove = e => { if(dragged) moveAt(e.clientX, e.clientY); };
@@ -198,7 +207,6 @@
     window.onpointerup = e => {
         if(!dragged) return;
         
-        // 判定目標：必須考慮到捲動同埋 fixed 定位
         dragged.style.visibility = 'hidden';
         const target = document.elementFromPoint(e.clientX, e.clientY);
         dragged.style.visibility = 'visible';
@@ -210,6 +218,8 @@
         dragged.style.zIndex = "10";
         dragged.style.left = '';
         dragged.style.top = '';
+        dragged.style.width = ''; // 恢復自動寬度
+        dragged.style.height = ''; // 恢復自動高度
 
         if(slot && slot.dataset.side === side) {
             slot.appendChild(dragged);
