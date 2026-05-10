@@ -9,15 +9,27 @@
             --main-color: #3498db; --success-color: #2ecc71; --error-color: #e74c3c; 
             --item-y: #f39c12; --item-n: #9b59b6; --font-main: "Microsoft JhengHei", sans-serif;
         }
+        
+        /* 修正 1: 解鎖捲動，移除 touch-action: none */
         body { 
-            font-family: var(--font-main); background: #f0f3f6; display: flex; flex-direction: column; 
-            align-items: center; margin: 0; padding: 10px; position: relative; touch-action: none; 
-            user-select: none; -webkit-user-select: none;
+            font-family: var(--font-main); 
+            background: #f0f3f6; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            margin: 0; 
+            padding: 10px; 
+            min-height: 100vh; /* 改為最小高度 */
+            position: relative; 
+            overflow-y: auto;   /* 允許上下捲動 */
+            overflow-x: hidden; /* 防止橫向出界 */
+            user-select: none; 
+            -webkit-user-select: none;
         }
 
         .index-btn { position: absolute; top: 15px; right: 15px; padding: 10px 18px; background: #34495e; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; z-index: 100; }
 
-        .eq-container { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 95%; max-width: 500px; margin-bottom: 10px; }
+        .eq-container { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 95%; max-width: 500px; margin-bottom: 10px; box-sizing: border-box; }
         .eq-row { display: grid; grid-template-columns: 1.5fr 60px 1.5fr; align-items: center; font-size: 26px; font-weight: bold; min-height: 50px; }
         .side-l { text-align: right; padding-right: 15px; }
         .side-c { text-align: center; font-size: 28px; }
@@ -27,19 +39,40 @@
         .op-red { color: var(--error-color); margin-left: 5px; }
         .div-red { color: var(--error-color); font-size: 24px; margin-left: 5px; font-weight: normal; }
 
-        /* 調整：增加 Stage 高度，確保長盤有空間擺動 */
-        #stage { position: relative; width: 100%; max-width: 650px; height: 500px; display: flex; justify-content: center; margin-top: 20px; }
+        /* 修正 2: 增加縮放支援，確保細畫面唔出界 */
+        #stage { 
+            position: relative; 
+            width: 100%; 
+            max-width: 650px; 
+            height: 520px; 
+            display: flex; 
+            justify-content: center; 
+            margin-top: 20px; 
+            transform-origin: top center; 
+        }
+
+        /* 針對 iPad 打直或細螢幕自動縮細 */
+        @media (max-width: 650px) {
+            #stage { transform: scale(0.85); height: 450px; }
+        }
+        @media (max-width: 500px) {
+            #stage { transform: scale(0.7); height: 380px; }
+        }
+        @media (max-width: 400px) {
+            #stage { transform: scale(0.6); height: 320px; }
+        }
+
         .pillar { position: absolute; bottom: 40px; width: 16px; height: 300px; background: #95a5a6; border-radius: 8px; }
         .base { position: absolute; bottom: 30px; width: 120px; height: 12px; background: #2c3e50; border-radius: 6px; }
         .beam-wrap { position: absolute; top: 50px; width: 580px; transition: transform 0.4s ease-out; z-index: 2; transform-origin: center 4px; }
         .beam { width: 100%; height: 8px; background: #bdc3c7; border-radius: 4px; display: flex; justify-content: space-between; }
 
-        /* 調整：盤子不再捲動，直接撐開，確保虛線籃清楚可見 */
         .pan { 
             width: 260px; background: rgba(255,255,255,0.9); border: 3px solid #34495e; 
             border-top: none; border-radius: 0 0 15px 15px; padding: 10px; 
-            min-height: 350px; /* 加高最低高度 */
+            min-height: 350px; 
             display: flex; flex-direction: column; 
+            box-sizing: border-box;
         }
         
         .init-pool { min-height: 60px; display: flex; flex-wrap: wrap; gap: 5px; justify-content: center; border-bottom: 1px dashed #ccc; margin-bottom: 15px; padding: 5px; }
@@ -47,7 +80,12 @@
         .group-slot { flex-grow: 1; border: 2px dashed #bdc3c7; border-radius: 8px; min-height: 50px; display: flex; flex-wrap: wrap; gap: 4px; padding: 6px; background: white; }
         .status-mark { width: 25px; font-size: 20px; text-align: center; }
 
-        .item { width: 34px; height: 34px; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; cursor: grab; touch-action: none; }
+        .item { 
+            width: 34px; height: 34px; border-radius: 6px; 
+            display: flex; align-items: center; justify-content: center; 
+            color: white; font-weight: bold; cursor: grab; 
+            touch-action: none; /* 拖件時唔會發動頁面捲動 */
+        }
         .item-y { background: var(--item-y); }
         .item-n { background: var(--item-n); }
 
@@ -56,11 +94,11 @@
             transform: scale(1.1); box-shadow: 0 10px 20px rgba(0,0,0,0.2);
         }
 
-        .trash-area { width: 90%; max-width: 450px; height: 65px; border: 2px dashed var(--error-color); border-radius: 12px; display: flex; flex-wrap: wrap; gap: 4px; align-items: center; justify-content: center; color: var(--error-color); margin: 15px 0; font-weight: bold; overflow: hidden; padding: 5px; }
+        .trash-area { width: 90%; max-width: 450px; min-height: 65px; border: 2px dashed var(--error-color); border-radius: 12px; display: flex; flex-wrap: wrap; gap: 4px; align-items: center; justify-content: center; color: var(--error-color); margin: 15px 0; font-weight: bold; padding: 5px; box-sizing: border-box; }
         
-        .controls { display: flex; gap: 10px; margin-bottom: 20px; }
+        .controls { display: flex; gap: 10px; margin-bottom: 50px; } /* 增加底距 */
         button { padding: 12px 20px; border: none; border-radius: 8px; background: var(--main-color); color: white; cursor: pointer; font-weight: bold; font-size: 16px; }
-        #msg { height: 35px; font-weight: bold; color: #2c3e50; font-size: 18px; margin: 10px 0; }
+        #msg { height: 35px; font-weight: bold; color: #2c3e50; font-size: 18px; margin: 10px 0; text-align: center; }
     </style>
 </head>
 <body>
@@ -116,7 +154,7 @@
 </div>
 
 <script>
-    /** iPad 影分身觸控引擎 - 保留不變 **/
+    /** iPad 影分身觸控引擎 **/
     (function() {
         let ghost = null;
         let sourceEl = null;
@@ -136,7 +174,7 @@
             if (!ghost) return;
             const touch = e.touches[0];
             updateGhost(touch.clientX, touch.clientY);
-            e.preventDefault(); 
+            e.preventDefault(); // 拖件時阻止捲動，確保拖得準
         }, {passive: false});
 
         document.addEventListener('touchend', function(e) {
@@ -257,7 +295,6 @@
         document.getElementById(parentId).appendChild(item);
     }
 
-    // 滑鼠支持 (PC)
     document.body.onmouseup = (e) => {
         if (!dragged) return;
         const x = e.clientX, y = e.clientY;
