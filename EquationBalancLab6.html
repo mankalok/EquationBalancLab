@@ -10,7 +10,6 @@
             --y-color: #f39c12; --item-n: #9b59b6; --font-main: "Microsoft JhengHei", sans-serif;
         }
         
-        /* 修正 1: 解鎖捲動，移除全域 touch-action: none */
         body { 
             font-family: var(--font-main); 
             background: #f8f9fa; 
@@ -19,9 +18,9 @@
             align-items: center; 
             margin: 0; 
             padding: 10px; 
-            min-height: 100vh; /* 確保有足夠長度捲動 */
-            overflow-y: auto;   /* 容許上下捲動 */
-            overflow-x: hidden; /* 防止打橫出界 */
+            min-height: 100vh; 
+            overflow-y: auto;   
+            overflow-x: hidden; 
             user-select: none; 
             -webkit-user-select: none;
         }
@@ -50,7 +49,6 @@
         .highlight-blue { color: var(--main-color); }
         .highlight-green { color: var(--success-color); }
 
-        /* 修正 2: 增加縮放支援，確保細畫面唔出界 */
         #stage { 
             position: relative; 
             width: 100%; 
@@ -62,7 +60,6 @@
             transform-origin: top center; 
         }
 
-        /* 針對 iPad 或手機自動縮細天秤 */
         @media (max-width: 720px) {
             #stage { transform: scale(0.85); height: 400px; }
         }
@@ -83,10 +80,11 @@
         }
         .beam { width: 100%; height: 8px; background: #bdc3c7; border-radius: 4px; display: flex; justify-content: space-between; }
 
+        /* 【核心修正】解決籃子顯示問題：放寬 max-height，將 overflow 改為 visible */
         .pan { 
             width: 280px; background: rgba(255,255,255,0.98); border: 3px solid #34495e; 
             border-top: none; border-radius: 0 0 15px 15px; padding: 10px; 
-            min-height: 280px; max-height: 320px; overflow-y: auto; 
+            min-height: 280px; max-height: 800px; overflow: visible; 
             display: flex; flex-direction: column; box-sizing: border-box;
         }
         
@@ -95,7 +93,7 @@
             position: relative; width: 55px; height: 55px; background: var(--y-color); 
             border-radius: 6px; display: flex; align-items: center; justify-content: center; 
             font-size: 22px; color: white; font-weight: bold; cursor: grab; 
-            touch-action: none; /* 拖動時禁止頁面捲動 */
+            touch-action: none;
         }
         
         .gap-slot {
@@ -117,7 +115,7 @@
             align-items: center; justify-content: center; color: white; 
             font-weight: bold; cursor: grab; font-size: 22px; background: var(--item-n);
             box-shadow: 0 2px 4px rgba(0,0,0,0.2); 
-            touch-action: none; /* 拖動時禁止頁面捲動 */
+            touch-action: none;
         }
 
         .ghost {
@@ -168,11 +166,11 @@
     <div class="base"></div><div class="pillar"></div>
     <div class="beam-wrap" id="beam-wrap">
         <div class="beam">
-            <div class="pan" id="pan-L">
+            <div class="pan" id="pan-L" ondrop="handleDrop(event, 'L')" ondragover="allowDrop(event)">
                 <div class="y-pool" id="y-pool"></div>
                 <div class="baskets" id="b-L"></div>
             </div>
-            <div class="pan" id="pan-R">
+            <div class="pan" id="pan-R" ondrop="handleDrop(event, 'R')" ondragover="allowDrop(event)">
                 <div id="r-items" style="display:flex; flex-wrap:wrap; gap:4px; min-height:65px; justify-content:center;"></div>
                 <div class="baskets" id="b-R"></div>
             </div>
@@ -190,7 +188,7 @@
 </div>
 
 <script>
-    // 影分身引擎內容保持不變...
+    // 影分身引擎（觸控部分）
     (function() {
         let ghost = null;
         let activeEl = null;
@@ -266,7 +264,7 @@
         }
     })();
 
-    // 遊戲邏輯部分保持不變...
+    // 遊戲邏輯部分
     const levels = [
         { a: 2, b: 3, c: 11, ans: 7 },
         { a: 3, b: 4, c: 8, ans: 4 }
@@ -295,6 +293,7 @@
         for(let i=0; i<lv.a; i++) { makeBasket('L', i); makeBasket('R', i); }
         update();
     }
+
     function makeBasket(side, i) {
         const row = document.createElement('div'); row.className = 'slot-row'; row.id = `row-${side}-${i}`;
         const slot = document.createElement('div'); slot.className = 'group-slot'; slot.id = `s-${side}-${i}`;
@@ -304,6 +303,7 @@
         row.appendChild(slot); if(mark) row.appendChild(mark);
         document.getElementById(`b-${side}`).appendChild(row);
     }
+
     function createItem(p) {
         const it = document.createElement('div'); it.className = 'item'; it.innerText = '1';
         it.draggable = true; it.id = 'it'+Math.random(); it.ondragstart = drag; p.appendChild(it);
@@ -315,16 +315,33 @@
         if(e.preventDefault) e.preventDefault();
         const id = e.dataTransfer.getData("text");
         const lv = levels[cur];
+        
+        // 核心修正：回復填補 Y 缺口邏輯，並支援電腦版
         if (id === 'spawn-item') {
             if (side === 'L') {
                 if (addL < lv.b) {
-                    addL++; const d = document.createElement('div'); d.className = 'filled-dot';
-                    document.getElementById('gap-box').appendChild(d);
-                    if (addL === lv.b) { const box = document.getElementById('gap-box'); box.parentElement.style.boxShadow = "0 0 15px rgba(46, 204, 113, 0.8)"; setTimeout(()=>box.remove(), 400); }
-                } else { addL++; createItem(document.getElementById(slotId || 'y-pool')); }
-            } else { addR++; createItem(document.getElementById(slotId || 'r-items')); }
+                    addL++; 
+                    const d = document.createElement('div'); 
+                    d.className = 'filled-dot';
+                    const gb = document.getElementById('gap-box');
+                    if (gb) {
+                        gb.appendChild(d);
+                        if (addL === lv.b) { 
+                            gb.parentElement.style.boxShadow = "0 0 15px rgba(46, 204, 113, 0.8)"; 
+                            setTimeout(()=>gb.remove(), 400); 
+                        }
+                    }
+                } else { 
+                    addL++; 
+                    createItem(document.getElementById(slotId || 'y-pool')); 
+                }
+            } else { 
+                addR++; 
+                createItem(document.getElementById(slotId || 'r-items')); 
+            }
         } else {
-            const el = document.getElementById(id); if(!el) return;
+            const el = document.getElementById(id); 
+            if(!el) return;
             const fromR = el.closest('#pan-R');
             if (el.classList.contains('item')) {
                 if (fromR && side === 'L') { addR--; addL++; }
@@ -334,6 +351,7 @@
         }
         update();
     }
+
     function dropTrash(e) {
         const id = e.dataTransfer.getData("text"); const el = document.getElementById(id);
         if (el && id !== 'spawn-item') {
@@ -342,6 +360,7 @@
             el.remove(); update();
         }
     }
+
     function update() {
         const lv = levels[cur];
         document.getElementById('eq1-l').innerHTML = `${lv.a}Y - ${lv.b}${addL>0? `<span style="color:var(--success-color)"> + ${addL}</span>`:''}`;
@@ -358,6 +377,7 @@
         } else { step2.style.visibility = 'hidden'; document.getElementById('eq-step3').style.visibility = 'hidden'; }
         check();
     }
+
     function check() {
         const lv = levels[cur]; const balanced = (addL === lv.b && (lv.c + addR) === lv.a * lv.ans);
         let winCount = 0;
