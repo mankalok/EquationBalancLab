@@ -9,10 +9,21 @@
             --main-color: #3498db; --success-color: #2ecc71; --error-color: #e74c3c; 
             --y-color: #f39c12; --item-n: #9b59b6; --font-main: "Microsoft JhengHei", sans-serif;
         }
+        
+        /* 修正 1: 解鎖捲動，移除全域 touch-action: none */
         body { 
-            font-family: var(--font-main); background: #f8f9fa; display: flex; flex-direction: column; 
-            align-items: center; margin: 0; padding: 10px; touch-action: none; 
-            user-select: none; -webkit-user-select: none;
+            font-family: var(--font-main); 
+            background: #f8f9fa; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            margin: 0; 
+            padding: 10px; 
+            min-height: 100vh; /* 確保有足夠長度捲動 */
+            overflow-y: auto;   /* 容許上下捲動 */
+            overflow-x: hidden; /* 防止打橫出界 */
+            user-select: none; 
+            -webkit-user-select: none;
         }
 
         .back-to-index {
@@ -25,7 +36,7 @@
         .eq-panel { 
             background: white; padding: 25px; border-radius: 12px; 
             box-shadow: 0 4px 10px rgba(0,0,0,0.05); width: 95%; max-width: 550px; 
-            margin-bottom: 15px;
+            margin-bottom: 15px; box-sizing: border-box;
         }
         .eq-row { 
             display: flex; justify-content: center; align-items: center; 
@@ -39,7 +50,29 @@
         .highlight-blue { color: var(--main-color); }
         .highlight-green { color: var(--success-color); }
 
-        #stage { position: relative; width: 100%; max-width: 700px; height: 440px; display: flex; justify-content: center; margin-top: 10px; }
+        /* 修正 2: 增加縮放支援，確保細畫面唔出界 */
+        #stage { 
+            position: relative; 
+            width: 100%; 
+            max-width: 700px; 
+            height: 460px; 
+            display: flex; 
+            justify-content: center; 
+            margin-top: 10px; 
+            transform-origin: top center; 
+        }
+
+        /* 針對 iPad 或手機自動縮細天秤 */
+        @media (max-width: 720px) {
+            #stage { transform: scale(0.85); height: 400px; }
+        }
+        @media (max-width: 600px) {
+            #stage { transform: scale(0.7); height: 320px; }
+        }
+        @media (max-width: 450px) {
+            #stage { transform: scale(0.55); height: 260px; }
+        }
+
         .pillar { position: absolute; bottom: 40px; width: 12px; height: 180px; background: #95a5a6; border-radius: 6px; }
         .base { position: absolute; bottom: 30px; width: 120px; height: 10px; background: #2c3e50; border-radius: 5px; }
         
@@ -54,14 +87,15 @@
             width: 280px; background: rgba(255,255,255,0.98); border: 3px solid #34495e; 
             border-top: none; border-radius: 0 0 15px 15px; padding: 10px; 
             min-height: 280px; max-height: 320px; overflow-y: auto; 
-            display: flex; flex-direction: column; 
+            display: flex; flex-direction: column; box-sizing: border-box;
         }
         
         .y-pool { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; min-height: 65px; margin-bottom: 10px; }
         .y-block { 
             position: relative; width: 55px; height: 55px; background: var(--y-color); 
             border-radius: 6px; display: flex; align-items: center; justify-content: center; 
-            font-size: 22px; color: white; font-weight: bold; cursor: grab; touch-action: none;
+            font-size: 22px; color: white; font-weight: bold; cursor: grab; 
+            touch-action: none; /* 拖動時禁止頁面捲動 */
         }
         
         .gap-slot {
@@ -82,21 +116,21 @@
             width: 45px; height: 45px; border-radius: 8px; display: flex; 
             align-items: center; justify-content: center; color: white; 
             font-weight: bold; cursor: grab; font-size: 22px; background: var(--item-n);
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2); touch-action: none;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2); 
+            touch-action: none; /* 拖動時禁止頁面捲動 */
         }
 
-        /* 影分身樣式 */
         .ghost {
             position: fixed; pointer-events: none; opacity: 0.8; z-index: 9999;
             transform: scale(1.1); box-shadow: 0 10px 20px rgba(0,0,0,0.3);
         }
 
-        .controls { width: 95%; max-width: 600px; display: grid; grid-template-columns: 1fr 1.5fr 1fr; gap: 15px; margin-top: 20px; }
+        .controls { width: 95%; max-width: 600px; display: grid; grid-template-columns: 1fr 1.5fr 1fr; gap: 15px; margin-top: 20px; margin-bottom: 30px; }
         .tool-box { background: white; padding: 10px; border-radius: 12px; border: 1px solid #ddd; display: flex; flex-direction: column; align-items: center; }
         .bin { background: #f1f2f6; border: 2px dashed #ced6e0; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #747d8c; font-size: 14px; }
 
         #msg-bar { height: 45px; font-weight: bold; color: #2c3e50; font-size: 19px; text-align: center; margin: 10px 0; }
-        .btn-next { padding: 12px 30px; background: var(--success-color); color: white; border: none; border-radius: 8px; cursor: pointer; display: none; font-size: 18px; font-weight: bold; box-shadow: 0 4px 0 #27ae60; }
+        .btn-next { padding: 12px 30px; background: var(--success-color); color: white; border: none; border-radius: 8px; cursor: pointer; display: none; font-size: 18px; font-weight: bold; box-shadow: 0 4px 0 #27ae60; margin-bottom: 10px; }
         .fade-out { opacity: 0.15; transform: scale(0.95); pointer-events: none; }
     </style>
 </head>
@@ -134,11 +168,11 @@
     <div class="base"></div><div class="pillar"></div>
     <div class="beam-wrap" id="beam-wrap">
         <div class="beam">
-            <div class="pan" id="pan-L" ondrop="handleDrop(event, 'L')" ondragover="allowDrop(event)">
+            <div class="pan" id="pan-L">
                 <div class="y-pool" id="y-pool"></div>
                 <div class="baskets" id="b-L"></div>
             </div>
-            <div class="pan" id="pan-R" ondrop="handleDrop(event, 'R')" ondragover="allowDrop(event)">
+            <div class="pan" id="pan-R">
                 <div id="r-items" style="display:flex; flex-wrap:wrap; gap:4px; min-height:65px; justify-content:center;"></div>
                 <div class="baskets" id="b-R"></div>
             </div>
@@ -156,7 +190,7 @@
 </div>
 
 <script>
-    // iPad 影分身拖放引擎 (修正殘影加強版)
+    // 影分身引擎內容保持不變...
     (function() {
         let ghost = null;
         let activeEl = null;
@@ -164,19 +198,14 @@
         document.addEventListener('touchstart', function(e) {
             const el = e.target.closest('#spawn-item, .item, .y-block');
             if (!el) return;
-            
-            // 開始前先清理所有可能殘留嘅 ghost
             const oldGhosts = document.querySelectorAll('.ghost');
             oldGhosts.forEach(og => og.remove());
-            
             activeEl = el;
             const touch = e.touches[0];
-            
             ghost = el.cloneNode(true);
             ghost.id = "ghost-temp";
             ghost.classList.add('ghost');
             ghost.style.pointerEvents = 'none'; 
-            
             document.body.appendChild(ghost);
             moveGhost(touch.clientX, touch.clientY);
         }, {passive: false});
@@ -190,18 +219,15 @@
 
         document.addEventListener('touchend', function(e) {
             if (!ghost) return;
-            
             try {
                 const touch = e.changedTouches[0];
                 const targetPanL = document.getElementById('pan-L');
                 const targetPanR = document.getElementById('pan-R');
                 const trash = document.getElementById('trash');
-                
                 let droppedInSlot = null;
                 document.querySelectorAll('.group-slot').forEach(slot => {
                     if (isOver(touch.clientX, touch.clientY, slot)) droppedInSlot = slot;
                 });
-
                 if (isOver(touch.clientX, touch.clientY, trash)) {
                     fakeDrop(activeEl.id, 'trash');
                 } else if (droppedInSlot) {
@@ -212,14 +238,10 @@
                 } else if (isOver(touch.clientX, touch.clientY, targetPanR)) {
                     fakeDrop(activeEl.id, 'R');
                 }
-            } catch (err) {
-                console.error("Drop error:", err);
-            } finally {
-                if (ghost && ghost.parentNode) {
-                    ghost.remove();
-                }
-                ghost = null;
-                activeEl = null;
+            } catch (err) { console.error(err); } 
+            finally {
+                if (ghost && ghost.parentNode) ghost.remove();
+                ghost = null; activeEl = null;
             }
         });
 
@@ -228,13 +250,11 @@
             ghost.style.left = (x - ghost.offsetWidth/2) + 'px';
             ghost.style.top = (y - ghost.offsetHeight/2) + 'px';
         }
-
         function isOver(x, y, el) {
             if (!el) return false;
             const rect = el.getBoundingClientRect();
             return x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom;
         }
-
         function fakeDrop(id, target, slotId) {
             const mockEvent = { 
                 preventDefault: () => {}, 
@@ -242,14 +262,11 @@
                 target: slotId ? document.getElementById(slotId) : null,
                 stopPropagation: () => {}
             };
-            if (target === 'trash') {
-                dropTrash(mockEvent);
-            } else {
-                handleDrop(mockEvent, target, slotId);
-            }
+            if (target === 'trash') dropTrash(mockEvent); else handleDrop(mockEvent, target, slotId);
         }
     })();
 
+    // 遊戲邏輯部分保持不變...
     const levels = [
         { a: 2, b: 3, c: 11, ans: 7 },
         { a: 3, b: 4, c: 8, ans: 4 }
@@ -257,59 +274,40 @@
     let cur = 0, addL = 0, addR = 0;
 
     function init() {
-        const lv = levels[cur];
-        addL = 0; addR = 0;
-        
+        const lv = levels[cur]; addL = 0; addR = 0;
         document.getElementById('eq0-l').innerText = `${lv.a}Y - ${lv.b}`;
         document.getElementById('eq0-r').innerText = lv.c;
         document.getElementById('eq1-l').innerText = `${lv.a}Y - ${lv.b}`;
         document.getElementById('eq1-r').innerText = lv.c;
-        
         document.getElementById('eq-step2').style.visibility = 'hidden';
         document.getElementById('eq-step3').style.visibility = 'hidden';
         document.getElementById('nextBtn').style.display = 'none';
         document.getElementById('msg-bar').innerText = "提示：先填補 Y 的缺口，令天秤平衡！";
-
         const yP = document.getElementById('y-pool'); yP.innerHTML = '';
         for(let i=0; i<lv.a; i++) {
-            const y = document.createElement('div');
-            y.className = 'y-block'; y.innerText = 'Y'; y.id = 'y'+i+Date.now(); y.draggable = true; y.ondragstart = drag;
-            if(i === lv.a-1) {
-                const g = document.createElement('div'); g.className = 'gap-slot'; g.id = 'gap-box';
-                y.appendChild(g);
-            }
+            const y = document.createElement('div'); y.className = 'y-block'; y.innerText = 'Y'; y.id = 'y'+i+Date.now(); y.draggable = true; y.ondragstart = drag;
+            if(i === lv.a-1) { const g = document.createElement('div'); g.className = 'gap-slot'; g.id = 'gap-box'; y.appendChild(g); }
             yP.appendChild(y);
         }
-
         const rP = document.getElementById('r-items'); rP.innerHTML = '';
         for(let i=0; i<lv.c; i++) createItem(rP);
-
-        document.getElementById('b-L').innerHTML = '';
-        document.getElementById('b-R').innerHTML = '';
-        for(let i=0; i<lv.a; i++) {
-            makeBasket('L', i); makeBasket('R', i);
-        }
+        document.getElementById('b-L').innerHTML = ''; document.getElementById('b-R').innerHTML = '';
+        for(let i=0; i<lv.a; i++) { makeBasket('L', i); makeBasket('R', i); }
         update();
     }
-
     function makeBasket(side, i) {
         const row = document.createElement('div'); row.className = 'slot-row'; row.id = `row-${side}-${i}`;
         const slot = document.createElement('div'); slot.className = 'group-slot'; slot.id = `s-${side}-${i}`;
-        slot.ondrop = (e) => { e.stopPropagation(); handleDrop(e, side, slot.id); };
-        slot.ondragover = allowDrop;
+        slot.ondrop = (e) => { e.stopPropagation(); handleDrop(e, side, slot.id); }; slot.ondragover = allowDrop;
         const mark = side === 'R' ? document.createElement('div') : null;
         if(mark) { mark.id = `m-${side}-${i}`; mark.innerText = "⚪"; }
-        row.appendChild(slot); 
-        if(mark) row.appendChild(mark);
+        row.appendChild(slot); if(mark) row.appendChild(mark);
         document.getElementById(`b-${side}`).appendChild(row);
     }
-
     function createItem(p) {
         const it = document.createElement('div'); it.className = 'item'; it.innerText = '1';
-        it.draggable = true; it.id = 'it'+Math.random(); it.ondragstart = drag;
-        p.appendChild(it);
+        it.draggable = true; it.id = 'it'+Math.random(); it.ondragstart = drag; p.appendChild(it);
     }
-
     function allowDrop(e) { e.preventDefault(); }
     function drag(e) { e.dataTransfer.setData("text", e.target.id); }
 
@@ -317,27 +315,16 @@
         if(e.preventDefault) e.preventDefault();
         const id = e.dataTransfer.getData("text");
         const lv = levels[cur];
-
         if (id === 'spawn-item') {
             if (side === 'L') {
                 if (addL < lv.b) {
-                    addL++;
-                    const d = document.createElement('div'); d.className = 'filled-dot';
+                    addL++; const d = document.createElement('div'); d.className = 'filled-dot';
                     document.getElementById('gap-box').appendChild(d);
-                    if (addL === lv.b) {
-                        const box = document.getElementById('gap-box');
-                        box.parentElement.style.boxShadow = "0 0 15px rgba(46, 204, 113, 0.8)";
-                        setTimeout(()=>box.remove(), 400);
-                    }
-                } else {
-                    addL++; createItem(document.getElementById(slotId || 'y-pool'));
-                }
-            } else {
-                addR++; createItem(document.getElementById(slotId || 'r-items'));
-            }
+                    if (addL === lv.b) { const box = document.getElementById('gap-box'); box.parentElement.style.boxShadow = "0 0 15px rgba(46, 204, 113, 0.8)"; setTimeout(()=>box.remove(), 400); }
+                } else { addL++; createItem(document.getElementById(slotId || 'y-pool')); }
+            } else { addR++; createItem(document.getElementById(slotId || 'r-items')); }
         } else {
-            const el = document.getElementById(id);
-            if(!el) return;
+            const el = document.getElementById(id); if(!el) return;
             const fromR = el.closest('#pan-R');
             if (el.classList.contains('item')) {
                 if (fromR && side === 'L') { addR--; addL++; }
@@ -347,88 +334,50 @@
         }
         update();
     }
-
     function dropTrash(e) {
-        const id = e.dataTransfer.getData("text");
-        const el = document.getElementById(id);
+        const id = e.dataTransfer.getData("text"); const el = document.getElementById(id);
         if (el && id !== 'spawn-item') {
             if (el.closest('#pan-L') && el.classList.contains('item')) addL--;
             if (el.closest('#pan-R') && el.classList.contains('item')) addR--;
             el.remove(); update();
         }
     }
-
     function update() {
         const lv = levels[cur];
         document.getElementById('eq1-l').innerHTML = `${lv.a}Y - ${lv.b}${addL>0? `<span style="color:var(--success-color)"> + ${addL}</span>`:''}`;
         document.getElementById('eq1-r').innerHTML = `${lv.c}${addR>0? `<span style="color:var(--success-color)"> + ${addR}</span>`:''}`;
-
-        const wL = (lv.a * lv.ans - lv.b) + addL;
-        const wR = lv.c + addR;
-        const diff = wR - wL;
+        const wL = (lv.a * lv.ans - lv.b) + addL; const wR = lv.c + addR; const diff = wR - wL;
         document.getElementById('beam-wrap').style.transform = `rotate(${diff * 1.5}deg)`;
-        
-        const op = document.getElementById('eq1-op');
-        op.innerText = diff === 0 ? "=" : (diff > 0 ? "<" : ">");
+        const op = document.getElementById('eq1-op'); op.innerText = diff === 0 ? "=" : (diff > 0 ? "<" : ">");
         op.style.color = diff === 0 ? "var(--success-color)" : "var(--error-color)";
-
         const step2 = document.getElementById('eq-step2');
         if (addL === lv.b && diff === 0) {
-            step2.style.visibility = 'visible';
-            document.getElementById('eq2-l').innerText = `${lv.a}Y`;
+            step2.style.visibility = 'visible'; document.getElementById('eq2-l').innerText = `${lv.a}Y`;
             document.getElementById('eq2-r').innerText = lv.c + addR;
             document.getElementById('msg-bar').innerText = `平衡了！現在兩邊同時平均分組到籃子裡`;
-        } else {
-            step2.style.visibility = 'hidden';
-            document.getElementById('eq-step3').style.visibility = 'hidden';
-        }
+        } else { step2.style.visibility = 'hidden'; document.getElementById('eq-step3').style.visibility = 'hidden'; }
         check();
     }
-
     function check() {
-        const lv = levels[cur];
-        const balanced = (addL === lv.b && (lv.c + addR) === lv.a * lv.ans);
+        const lv = levels[cur]; const balanced = (addL === lv.b && (lv.c + addR) === lv.a * lv.ans);
         let winCount = 0;
-        
         for(let i=0; i<lv.a; i++) {
-            const sL = document.getElementById(`s-L-${i}`);
-            const sR = document.getElementById(`s-R-${i}`);
-            const m = document.getElementById(`m-R-${i}`);
-            
+            const sL = document.getElementById(`s-L-${i}`); const sR = document.getElementById(`s-R-${i}`); const m = document.getElementById(`m-R-${i}`);
             const hasY = Array.from(sL.children).some(c => c.classList.contains('y-block'));
             const countR = Array.from(sR.children).length;
-
-            if (hasY && countR === lv.ans && balanced) {
-                m.innerText = "✅"; winCount++;
-            } else if (hasY || countR > 0) {
-                m.innerText = "❌";
-            } else {
-                m.innerText = "⚪";
-            }
+            if (hasY && countR === lv.ans && balanced) { m.innerText = "✅"; winCount++; }
+            else if (hasY || countR > 0) m.innerText = "❌"; else m.innerText = "⚪";
         }
-
         const clean = document.getElementById('y-pool').children.length === 0 && document.getElementById('r-items').children.length === 0;
-
         if (winCount === lv.a && clean) {
-            const currentTotalR = lv.c + addR;
             document.getElementById('eq2-l').innerHTML = `${lv.a}Y <span style="font-size:0.8em; color:#95a5a6">÷ ${lv.a}</span>`;
-            document.getElementById('eq2-r').innerHTML = `${currentTotalR} <span style="font-size:0.8em; color:#95a5a6">÷ ${lv.a}</span>`;
-            
-            document.getElementById('eq-step3').style.visibility = 'visible';
-            document.getElementById('eq3-r').innerText = lv.ans;
-            
+            document.getElementById('eq2-r').innerHTML = `${lv.c + addR} <span style="font-size:0.8em; color:#95a5a6">÷ ${lv.a}</span>`;
+            document.getElementById('eq-step3').style.visibility = 'visible'; document.getElementById('eq3-r').innerText = lv.ans;
             document.getElementById('msg-bar').innerHTML = `<span style="color:var(--success-color)">🎉 太棒了！平均分組後得 Y = ${lv.ans}</span>`;
             document.getElementById('nextBtn').style.display = 'inline-block';
-            
-            for(let i=1; i<lv.a; i++) {
-                document.getElementById(`row-L-${i}`).classList.add('fade-out');
-                document.getElementById(`row-R-${i}`).classList.add('fade-out');
-            }
-        } else {
-            document.querySelectorAll('.slot-row').forEach(r => r.classList.remove('fade-out'));
-        }
+            for(let i=1; i<lv.a; i++) { document.getElementById(`row-L-${i}`).classList.add('fade-out'); document.getElementById(`row-R-${i}`).classList.add('fade-out'); }
+        } else { document.querySelectorAll('.slot-row').forEach(r => r.classList.remove('fade-out')); }
     }
-
     function nextLevel() { cur = (cur + 1) % levels.length; init(); }
     function reset() { init(); }
     init();
