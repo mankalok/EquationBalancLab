@@ -10,11 +10,16 @@
 
         .index-btn { position: fixed; top: 20px; right: 20px; padding: 10px 20px; background: #34495e; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; z-index: 1000; text-decoration: none; font-size: 16px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         
-        /* 這裡修改了背景顏色，由 #2c3e50 改為 #ecf0f1 (淺灰) 或 #3498db (藍色) */
-        /* 為了讓黑色分線最清楚，建議使用淺色背景，或者像下面這樣稍微調淺 */
         .header-title { background: #dee2e6; color: #2c3e50; padding: 15px 40px; border-radius: 10px; margin-bottom: 20px; font-size: 28px; font-weight: bold; display: flex; align-items: center; gap: 10px; border: 2px solid #bdc3c7; }
         
         .layout-container { display: flex; width: 100%; max-width: 1200px; gap: 30px; align-items: flex-start; }
+        
+        /* 針對手機打直的修正：縮細整體容器 */
+        @media (max-width: 600px) {
+            .layout-container { flex-direction: column; align-items: center; }
+            .main-game { width: 100%; }
+        }
+
         .main-game { flex: 2; display: flex; flex-direction: column; align-items: center; }
         .eq-panel { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 100%; margin-bottom: 15px; }
         .eq-line { display: flex; align-items: center; justify-content: center; font-size: 32px; font-weight: bold; height: 60px; }
@@ -32,7 +37,15 @@
         .highlight { color: var(--y-color); font-size: 30px; }
         .process-row { color: #e74c3c; font-size: 18px; }
 
+        /* 天秤容器修正 */
         #stage { position: relative; width: 100%; height: 380px; display: flex; justify-content: center; margin-top: 20px; }
+        
+        /* 核心修正：手機打直時自動縮小天秤 */
+        @media (max-width: 600px) {
+            #stage { height: 240px; } /* 縮小後高度也要調低 */
+            .beam-wrap { transform: scale(0.6); transform-origin: top center; }
+        }
+
         .beam-wrap { position: absolute; top: 60px; width: 560px; transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
         .beam { width: 100%; height: 12px; background: #bdc3c7; border-radius: 6px; display: flex; justify-content: space-between; }
         .basket { width: 260px; min-height: 250px; background: rgba(255,255,255,0.8); border: 4px solid #34495e; border-top: none; border-radius: 0 0 25px 25px; padding: 12px; display: flex; flex-wrap: wrap; align-content: flex-start; gap: 8px; }
@@ -42,6 +55,14 @@
         .item-v { width: 45px; background: var(--item-v); font-size: 20px; }
 
         .manual-controls-table { width: 100%; max-width: 800px; margin-top: 20px; background: #eef2f3; border-radius: 15px; border-collapse: separate; border-spacing: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        
+        /* 手機按鈕表格修正 */
+        @media (max-width: 600px) {
+            .manual-controls-table { border-spacing: 5px; }
+            .ctrl-cell { padding: 8px; }
+            .btn-stack button { font-size: 13px; padding: 8px 4px; }
+        }
+
         .ctrl-cell { vertical-align: top; width: 33.33%; background: white; padding: 15px; border-radius: 12px; box-shadow: inset 0 0 5px rgba(0,0,0,0.05); }
         .ctrl-label { font-size: 16px; font-weight: bold; color: #2c3e50; text-align: center; margin-bottom: 10px; border-bottom: 2px solid #eee; padding-bottom: 5px; }
         
