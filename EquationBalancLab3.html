@@ -43,7 +43,6 @@
             transform-origin: top center; 
         }
 
-        /* 修正：自動縮放時保持比例，但拖放邏輯會透過 JS 補償座標差 */
         @media (max-width: 600px) { #stage { transform: scale(0.85); height: 410px; } }
         @media (max-width: 500px) { #stage { transform: scale(0.75); height: 360px; } }
         @media (max-width: 400px) { #stage { transform: scale(0.65); height: 310px; } }
@@ -133,6 +132,7 @@
     const levels = [{ y: 3, v: 12, ans: 4 }, { y: 2, v: 10, ans: 5 }];
     let cur = 0;
     let dragged = null;
+    let startX = 0, startY = 0;
 
     function init() {
         const lv = levels[cur];
@@ -169,18 +169,10 @@
         div.onpointerdown = e => {
             dragged = div;
             div.setPointerCapture(e.pointerId);
-            
-            // 取得物件目前的尺寸，並計算手指相對於物件左上角的偏移量
-            const rect = div.getBoundingClientRect();
-            div.dataset.offsetX = e.clientX - rect.left;
-            div.dataset.offsetY = e.clientY - rect.top;
-
-            div.style.position = 'fixed';
+            startX = e.clientX;
+            startY = e.clientY;
             div.style.zIndex = "2000";
-            div.style.width = rect.width + 'px'; // 鎖定寬度
-            div.style.height = rect.height + 'px'; // 鎖定高度
-            
-            moveAt(e.clientX, e.clientY);
+            div.style.transition = 'none';
         };
 
         div.onclick = () => {
@@ -193,16 +185,12 @@
         parent.appendChild(div);
     }
 
-    function moveAt(x, y) {
-        if(!dragged) return;
-        // 使用 offsetX/Y 補償，確保手指抓在哪裡物件就留在哪裡，不會跳動
-        const ox = parseFloat(dragged.dataset.offsetX);
-        const oy = parseFloat(dragged.dataset.offsetY);
-        dragged.style.left = (x - ox) + 'px';
-        dragged.style.top = (y - oy) + 'px';
-    }
-
-    window.onpointermove = e => { if(dragged) moveAt(e.clientX, e.clientY); };
+    window.onpointermove = e => { 
+        if(!dragged) return; 
+        const dx = e.clientX - startX;
+        const dy = e.clientY - startY;
+        dragged.style.transform = `translate(${dx}px, ${dy}px)`;
+    };
 
     window.onpointerup = e => {
         if(!dragged) return;
@@ -214,18 +202,15 @@
         const slot = target ? target.closest('.group-slot') : null;
         const side = dragged.dataset.side;
 
-        dragged.style.position = 'static';
-        dragged.style.zIndex = "10";
-        dragged.style.left = '';
-        dragged.style.top = '';
-        dragged.style.width = ''; // 恢復自動寬度
-        dragged.style.height = ''; // 恢復自動高度
-
         if(slot && slot.dataset.side === side) {
             slot.appendChild(dragged);
         } else {
             document.getElementById('pool-' + side).appendChild(dragged);
         }
+
+        dragged.style.transition = 'transform 0.2s';
+        dragged.style.transform = 'translate(0, 0)';
+        dragged.style.zIndex = "10";
         dragged = null;
         resetVisuals();
     };
@@ -235,10 +220,10 @@
         for(let i=0; i<lv.y; i++) {
             const sl = document.getElementById(`slot-L-${i}`);
             const sr = document.getElementById(`slot-R-${i}`);
-            sl.style.opacity = "1";
-            sr.style.opacity = "1";
-            sl.querySelector('.slot-feedback').innerText = '';
-            sr.querySelector('.slot-feedback').innerText = '';
+            if(sl) sl.style.opacity = "1";
+            if(sr) sr.style.opacity = "1";
+            if(sl) sl.querySelector('.slot-feedback').innerText = '';
+            if(sr) sr.querySelector('.slot-feedback').innerText = '';
         }
     }
 
