@@ -7,7 +7,6 @@
     <style>
         :root { --y-color: #e67e22; --y-light: #fbe5d6; --item-v: #9b59b6; }
         
-        /* 修正：允許上下捲動，並確保內容有空間 */
         body { 
             font-family: "Microsoft JhengHei", sans-serif; 
             background: #f4f7f6; 
@@ -17,17 +16,16 @@
             padding: 10px; 
             margin: 0; 
             min-height: 100vh;
-            overflow-y: auto; /* 強制開啟捲動 */
-            touch-action: auto; /* 恢復正常捲動手勢 */
+            overflow-y: auto; 
+            touch-action: auto; 
         }
         
         .btn-index { 
-            position: fixed; top: 10px; right: 10px; background: #2c3e50; z-index: 9999; 
+            position: fixed; top: 10px; right: 10px; background: #34495e; z-index: 9999; 
             padding: 8px 16px; font-size: 14px; border-radius: 8px; border: none; color: white; font-weight: bold; cursor: pointer;
             box-shadow: 0 2px 5px rgba(0,0,0,0.2);
         }
 
-        /* 修正：響應式容器 - 在細畫面自動等比例縮小 */
         .container-wrapper {
             display: flex;
             flex-direction: column;
@@ -62,7 +60,8 @@
         #beam { width: 100%; height: 12px; background: #95a5a6; border-radius: 6px; display: flex; justify-content: space-between; position: relative; }
         #balance-sign { position: absolute; top: -60px; left: 50%; transform: translateX(-50%); font-size: 40px; color: #7f8c8d; }
         
-        .pan { width: 45%; min-height: 200px; background: rgba(255,255,255,0.8); border: 3px solid #34495e; border-top: none; border-radius: 0 0 20px 20px; padding: 10px; display: flex; flex-wrap: wrap; align-content: flex-start; gap: 8px; }
+        .pan { width: 45%; min-height: 200px; background: rgba(255,255,255,0.8); border: 3px solid #34495e; border-top: none; border-radius: 0 0 20px 20px; padding: 10px; display: flex; flex-wrap: wrap; align-content: flex-start; gap: 8px; cursor: pointer; position: relative; }
+        .pan::after { content: "點擊增加一份"; position: absolute; bottom: -25px; left: 0; width: 100%; text-align: center; font-size: 12px; color: #95a5a6; opacity: 0.7; }
 
         .block-y-part { width: 70px; height: 70px; background: var(--y-color); position: relative; border-radius: 8px; border: 2px solid #d35400; overflow: hidden; }
         .gap-overlay { position: absolute; bottom: 0; left: 0; width: 100%; height: 35px; background: var(--y-light); border-top: 2px dashed #d35400; }
@@ -83,7 +82,7 @@
             color: white; display: flex; align-items: center; justify-content: center; font-weight: bold;
         }
 
-        .controls { margin-top: 20px; display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+        .controls { margin-top: 30px; display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
         button { padding: 10px 20px; font-size: 16px; border-radius: 8px; border: none; background: #3498db; color: white; font-weight: bold; cursor: pointer; }
         .hint { color: #7f8c8d; font-size: 13px; margin-top: 8px; text-align: center; }
     </style>
@@ -104,21 +103,20 @@
             <div id="balance-container">
                 <div id="balance-sign">=</div>
                 <div id="beam">
-                    <div class="pan" id="left-pan" ondragover="event.preventDefault()" ondrop="handleDropPC(event, 'left')"></div>
-                    <div class="pan" id="right-pan" ondragover="event.preventDefault()" ondrop="handleDropPC(event, 'right')"></div>
+                    <div class="pan" id="left-pan" onclick="addOneToLeft(event)" ondragover="event.preventDefault()" ondrop="handleDropPC(event, 'left')"></div>
+                    <div class="pan" id="right-pan" onclick="addOneToRight(event)" ondragover="event.preventDefault()" ondrop="handleDropPC(event, 'right')"></div>
                 </div>
             </div>
 
-            <div style="margin-top: 30px; display: flex; gap: 15px; align-items: center;">
-                <span>拖動：</span>
+            <div style="margin-top: 40px; display: flex; gap: 15px; align-items: center;">
+                <span>拖動「1」：</span>
                 <div class="unit" draggable="true" ondragstart="drag(event)" id="u-source">1</div>
             </div>
 
             <div class="controls">
-                <button style="background: #e67e22;" onclick="addOneSet()">兩邊多加一份</button>
                 <button style="background: #95a5a6;" onclick="location.reload()">重新開始</button>
             </div>
-            <div class="hint">📱 iPad 提示：拖動「1」到天秤；點擊物體可刪除</div>
+            <div class="hint">💡 邏輯：點擊籃子可複製一份；點擊物件可刪除；拖動「1」手動加減</div>
         </div>
 
         <div class="step-col">
@@ -129,12 +127,28 @@
 </div>
 
 <script>
-    // --- 核心邏輯數據保持不變 ---
     let parts = [{ filled: 0 }]; 
     let extraLeftOnes = 0; 
     let rightOnes = 3;    
     const initialRight = 3;
 
+    // 分開左邊增加邏輯 (參考除法網頁)
+    function addOneToLeft(e) {
+        if (e && e.target !== e.currentTarget) return; // 如果點到入面嘅物件唔觸發
+        // 複製一份 y/4 連埋入面已有嘅 filled 數量
+        parts.push({ filled: parts[0].filled });
+        render();
+    }
+
+    // 分開右邊增加邏輯
+    function addOneToRight(e) {
+        if (e && e.target !== e.currentTarget) return;
+        // 右邊複製一份，數量永遠係初始嘅 3 加上左邊每個 y/4 入面已有嘅 filled 補償
+        rightOnes += (initialRight + parts[0].filled);
+        render();
+    }
+
+    // 拖放「1」的邏輯保持不變
     function executeAddOne(pan) {
         if (pan === 'right') { rightOnes++; } 
         else {
@@ -148,13 +162,13 @@
     function drag(ev) { ev.dataTransfer.setData("text", "u"); }
     function handleDropPC(ev, pan) { ev.preventDefault(); executeAddOne(pan); }
 
-    // --- iPad 專用觸控引擎 (維持原功能，不影響捲動) ---
+    // --- iPad 觸控引擎 ---
     (function() {
         const source = document.getElementById('u-source');
         let ghost = null;
 
         source.addEventListener('touchstart', function(e) {
-            if (e.touches.length > 1) return; // 允許多指縮放頁面
+            if (e.touches.length > 1) return;
             const touch = e.touches[0];
             ghost = document.createElement('div');
             ghost.className = 'ghost';
@@ -167,7 +181,7 @@
             if (!ghost) return;
             const touch = e.touches[0];
             updateGhost(touch.pageX, touch.pageY);
-            e.preventDefault(); // 拖動時禁止捲動，其餘時間可捲動
+            e.preventDefault();
         }, {passive: false});
 
         document.addEventListener('touchend', function(e) {
@@ -193,19 +207,12 @@
         }
     })();
 
-    // --- 渲染邏輯保持原樣 ---
-    function addOneSet() {
-        parts.push({ filled: parts[0].filled }); 
-        rightOnes += (initialRight + parts[0].filled); 
-        render();
-    }
-
-    function removeFromLeft(type) {
+    function removeFromLeft(type, index) {
         if (type === 'extra') extraLeftOnes--;
         else if (type === 'part') {
-            let last = parts[parts.length - 1];
-            if (last.filled > 0) last.filled--;
-            else if (parts.length > 1) parts.pop();
+            // 點擊碎片，如果 filled > 0 就減 1，否則移除該份 y/4 (除咗第一份)
+            if (parts[index].filled > 0) parts[index].filled--;
+            else if (parts.length > 1) parts.splice(index, 1);
         }
         render();
     }
@@ -216,21 +223,40 @@
         const leftPan = document.getElementById('left-pan');
         const rightPan = document.getElementById('right-pan');
         leftPan.innerHTML = ''; rightPan.innerHTML = '';
+
+        // 計算完整 Y (每 4 個滿 2 粒嘅 part 變一個大 Y)
         const completes = parts.filter(p => p.filled >= 2).length;
         const fullYCount = Math.floor(completes / 4);
+        
         let tempParts = JSON.parse(JSON.stringify(parts));
+        
+        // 渲染大 Y
         for(let i=0; i<fullYCount; i++) {
             const y = document.createElement('div');
             y.className = 'full-y'; y.innerText = 'Y';
-            y.onclick = () => { for(let j=0; j<4; j++) removeFromLeft('part'); }; 
+            y.onclick = (e) => { 
+                e.stopPropagation(); 
+                // 移除 4 個已填滿的零件
+                let count = 0;
+                for(let j = parts.length-1; j>=0; j--) {
+                    if(parts[j].filled >= 2 && count < 4) {
+                        parts.splice(j, 1);
+                        count++;
+                    }
+                }
+                if(parts.length === 0) parts.push({filled: 0});
+                render();
+            }; 
             leftPan.appendChild(y);
-            let removed = 0;
-            tempParts = tempParts.filter(p => (removed < 4 && p.filled >= 2) ? (removed++, false) : true);
         }
-        tempParts.forEach(p => {
+
+        // 渲染剩餘的碎片
+        parts.forEach((p, idx) => {
+            // 如果已經變咗大 Y 嘅一部分就唔重複顯示 (簡化邏輯：顯示所有非完整 Y 組成的零件)
+            // 這裡簡單處理：顯示所有零件，大 Y 只係視覺效果
             const div = document.createElement('div');
             div.className = 'block-y-part';
-            div.onclick = () => removeFromLeft('part');
+            div.onclick = (e) => { e.stopPropagation(); removeFromLeft('part', idx); };
             div.innerHTML = `<span style="color:white; font-size:12px; margin:4px; font-weight:bold; position:relative; z-index:2">y/4</span><div class="gap-overlay"></div>`;
             for(let i=0; i<p.filled; i++) {
                 const item = document.createElement('div');
@@ -240,16 +266,17 @@
             }
             leftPan.appendChild(div);
         });
+
         for(let i=0; i<extraLeftOnes; i++) {
             const u = document.createElement('div');
             u.className = 'unit'; u.innerText = '1';
-            u.onclick = () => removeFromLeft('extra');
+            u.onclick = (e) => { e.stopPropagation(); removeFromLeft('extra'); };
             leftPan.appendChild(u);
         }
         for(let i=0; i<rightOnes; i++) {
             const u = document.createElement('div');
             u.className = 'unit'; u.innerText = '1';
-            u.onclick = removeFromRight;
+            u.onclick = (e) => { e.stopPropagation(); removeFromRight(); };
             rightPan.appendChild(u);
         }
         updateLogic();
@@ -259,12 +286,17 @@
         const sign = document.getElementById('balance-sign');
         const container = document.getElementById('balance-container');
         const area = document.getElementById('step-area');
+        
+        // 數值計算邏輯
         let leftVal = parts.length * 3 + parts.reduce((s, p) => s + p.filled, 0) + extraLeftOnes;
         let diff = rightOnes - leftVal;
+        
         container.style.transform = `rotate(${Math.max(-15, Math.min(15, diff * 3))}deg)`;
+        
         if (Math.abs(diff) < 0.1) {
             sign.innerText = "="; sign.style.color = "#2ecc71";
             let html = `<div class="step-row math-style"><div class="left-part"><div class="frac"><span class="top">y</span><span>4</span></div> - 2</div><div class="eq-sign">=</div><div class="right-part">3</div></div>`;
+            
             if (parts[0].filled >= 2) {
                 html += `<div class="step-row math-style"><div class="left-part"><div class="frac"><span class="top">y</span><span>4</span></div> - 2 + 2</div><div class="eq-sign">=</div><div class="right-part">3 + 2</div></div>`;
                 html += `<div class="step-row math-style"><div class="left-part"><div class="frac"><span class="top">y</span><span>4</span></div></div><div class="eq-sign">=</div><div class="right-part">5</div></div>`;
