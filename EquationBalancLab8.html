@@ -132,23 +132,18 @@
     let rightOnes = 3;    
     const initialRight = 3;
 
-    // 分開左邊增加邏輯 (參考除法網頁)
     function addOneToLeft(e) {
-        if (e && e.target !== e.currentTarget) return; // 如果點到入面嘅物件唔觸發
-        // 複製一份 y/4 連埋入面已有嘅 filled 數量
+        if (e && e.target !== e.currentTarget) return; 
         parts.push({ filled: parts[0].filled });
         render();
     }
 
-    // 分開右邊增加邏輯
     function addOneToRight(e) {
         if (e && e.target !== e.currentTarget) return;
-        // 右邊複製一份，數量永遠係初始嘅 3 加上左邊每個 y/4 入面已有嘅 filled 補償
         rightOnes += (initialRight + parts[0].filled);
         render();
     }
 
-    // 拖放「1」的邏輯保持不變
     function executeAddOne(pan) {
         if (pan === 'right') { rightOnes++; } 
         else {
@@ -210,7 +205,6 @@
     function removeFromLeft(type, index) {
         if (type === 'extra') extraLeftOnes--;
         else if (type === 'part') {
-            // 點擊碎片，如果 filled > 0 就減 1，否則移除該份 y/4 (除咗第一份)
             if (parts[index].filled > 0) parts[index].filled--;
             else if (parts.length > 1) parts.splice(index, 1);
         }
@@ -224,11 +218,10 @@
         const rightPan = document.getElementById('right-pan');
         leftPan.innerHTML = ''; rightPan.innerHTML = '';
 
-        // 計算完整 Y (每 4 個滿 2 粒嘅 part 變一個大 Y)
+        // 【關鍵修正邏輯】
+        // 找出所有已填滿 2 粒的碎片
         const completes = parts.filter(p => p.filled >= 2).length;
-        const fullYCount = Math.floor(completes / 4);
-        
-        let tempParts = JSON.parse(JSON.stringify(parts));
+        const fullYCount = Math.floor(completes / 4); // 可以組成多少個大 Y
         
         // 渲染大 Y
         for(let i=0; i<fullYCount; i++) {
@@ -236,7 +229,7 @@
             y.className = 'full-y'; y.innerText = 'Y';
             y.onclick = (e) => { 
                 e.stopPropagation(); 
-                // 移除 4 個已填滿的零件
+                // 點擊大 Y 拆解回碎片（或簡單移除 4 個完整碎片）
                 let count = 0;
                 for(let j = parts.length-1; j>=0; j--) {
                     if(parts[j].filled >= 2 && count < 4) {
@@ -250,10 +243,17 @@
             leftPan.appendChild(y);
         }
 
-        // 渲染剩餘的碎片
+        // 渲染剩餘零件：過濾掉已經組成大 Y 的零件
+        // 我們只顯示「未填滿」的零件，或者「超過 4 的倍數」的填滿零件
+        let skipFilledCount = fullYCount * 4; 
+        
         parts.forEach((p, idx) => {
-            // 如果已經變咗大 Y 嘅一部分就唔重複顯示 (簡化邏輯：顯示所有非完整 Y 組成的零件)
-            // 這裡簡單處理：顯示所有零件，大 Y 只係視覺效果
+            // 如果這個零件是已填滿的，且還在大 Y 的配額內，就不顯示
+            if (p.filled >= 2 && skipFilledCount > 0) {
+                skipFilledCount--;
+                return; 
+            }
+
             const div = document.createElement('div');
             div.className = 'block-y-part';
             div.onclick = (e) => { e.stopPropagation(); removeFromLeft('part', idx); };
@@ -267,6 +267,7 @@
             leftPan.appendChild(div);
         });
 
+        // 渲染額外的「1」
         for(let i=0; i<extraLeftOnes; i++) {
             const u = document.createElement('div');
             u.className = 'unit'; u.innerText = '1';
@@ -287,7 +288,7 @@
         const container = document.getElementById('balance-container');
         const area = document.getElementById('step-area');
         
-        // 數值計算邏輯
+        // 數值計算：每個碎片算 3 單位(因為 y/4 - 2 = 3)，填入的 1 算 1 單位
         let leftVal = parts.length * 3 + parts.reduce((s, p) => s + p.filled, 0) + extraLeftOnes;
         let diff = rightOnes - leftVal;
         
