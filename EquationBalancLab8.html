@@ -2,285 +2,230 @@
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>方程探究：iPad 優化捲動版</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>方程探究：精準操作平衡版</title>
     <style>
-        :root { --y-color: #e67e22; --y-light: #fbe5d6; --item-v: #9b59b6; }
+        :root { --y-color: #e67e22; --y-light: #fbe5d6; --item-v: #9b59b6; --main-blue: #3498db; }
         
         body { 
             font-family: "Microsoft JhengHei", sans-serif; 
-            background: #f4f7f6; 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
-            padding: 10px; 
-            margin: 0; 
-            min-height: 100vh;
-            overflow-y: auto; 
-            touch-action: auto; 
+            background: #f4f7f6; display: flex; flex-direction: column; align-items: center; 
+            padding: 10px; margin: 0; min-height: 100vh; overflow-y: auto; /* 支援捲動 */
+            -webkit-overflow-scrolling: touch;
         }
         
+        /* 修正返回掣大細 */
         .btn-index { 
-            position: fixed; top: 10px; right: 10px; background: #34495e; z-index: 9999; 
-            padding: 8px 16px; font-size: 14px; border-radius: 8px; border: none; color: white; font-weight: bold; cursor: pointer;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            position: fixed; top: 10px; right: 10px; background: #34495e; color: white; 
+            padding: 8px 16px; border-radius: 8px; border: none; cursor: pointer; z-index: 9999;
+            width: auto; height: auto; font-size: 14px; font-weight: bold;
         }
 
-        .container-wrapper {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            width: 100%;
-            transform-origin: top center;
-        }
-
-        @media (max-width: 1100px) {
-            .header { flex-direction: column !important; align-items: center; }
-            .step-col { width: 90% !important; min-height: auto !important; margin-top: 20px; }
-            .container-wrapper { transform: scale(0.95); }
-        }
-
-        @media (max-width: 768px) {
-            .container-wrapper { transform: scale(0.85); }
-        }
-
-        .math-style { font-size: 24px; font-weight: bold; color: #2c3e50; display: flex; align-items: center; }
-        .left-part { width: 180px; display: flex; justify-content: flex-end; align-items: center; }
-        .eq-sign { width: 40px; text-align: center; }
-        .right-part { flex: 1; display: flex; align-items: center; }
-
+        .math-style { font-size: 24px; font-weight: bold; color: #2c3e50; display: flex; align-items: center; justify-content: center; line-height: 1.2; }
         .frac { display: inline-flex; flex-direction: column; align-items: center; vertical-align: middle; margin: 0 5px; }
         .frac .top { border-bottom: 3px solid #2c3e50; padding: 0 5px; min-width: 25px; text-align: center; }
         
-        .header { display: flex; flex-direction: row; width: 95%; max-width: 1100px; gap: 20px; margin-top: 10px; }
+        .header { display: flex; flex-direction: row; width: 98%; max-width: 1100px; gap: 15px; margin-top: 10px; }
         .main-col { flex: 1.5; display: flex; flex-direction: column; align-items: center; }
-        .step-col { flex: 1; background: white; border-radius: 15px; padding: 20px; box-shadow: 0 5px 20px rgba(0,0,0,0.05); border-top: 6px solid var(--y-color); min-height: 400px; }
+        .step-col { flex: 1; background: white; border-radius: 15px; padding: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.05); border-top: 6px solid var(--y-color); min-height: 450px; }
 
-        #balance-container { position: relative; width: 100%; min-width: 450px; height: 250px; margin-top: 40px; transition: transform 0.5s; transform-origin: center 80px; }
+        #balance-container { position: relative; width: 100%; min-width: 400px; height: 220px; margin-top: 30px; transition: transform 0.5s; transform-origin: center 80px; }
         #beam { width: 100%; height: 12px; background: #95a5a6; border-radius: 6px; display: flex; justify-content: space-between; position: relative; }
-        #balance-sign { position: absolute; top: -60px; left: 50%; transform: translateX(-50%); font-size: 40px; color: #7f8c8d; }
+        #balance-sign { position: absolute; top: -50px; left: 50%; transform: translateX(-50%); font-size: 40px; color: #7f8c8d; }
         
-        .pan { width: 45%; min-height: 200px; background: rgba(255,255,255,0.8); border: 3px solid #34495e; border-top: none; border-radius: 0 0 20px 20px; padding: 10px; display: flex; flex-wrap: wrap; align-content: flex-start; gap: 8px; cursor: pointer; position: relative; }
-        .pan::after { content: "點擊增加一份"; position: absolute; bottom: -25px; left: 0; width: 100%; text-align: center; font-size: 12px; color: #95a5a6; opacity: 0.7; }
+        .pan { width: 45%; min-height: 180px; background: rgba(255,255,255,0.8); border: 3px solid #34495e; border-top: none; border-radius: 0 0 20px 20px; padding: 10px; display: flex; flex-wrap: wrap; align-content: flex-start; gap: 8px; position: relative; }
 
-        .block-y-part { width: 70px; height: 70px; background: var(--y-color); position: relative; border-radius: 8px; border: 2px solid #d35400; overflow: hidden; }
-        .gap-overlay { position: absolute; bottom: 0; left: 0; width: 100%; height: 35px; background: var(--y-light); border-top: 2px dashed #d35400; }
-        .filled-item { width: 32px; height: 32px; background: var(--item-v); border-radius: 4px; position: absolute; bottom: 2px; border: 1px solid white; }
+        .block-y-part { width: 65px; height: 65px; background: var(--y-color); position: relative; border-radius: 8px; border: 2px solid #d35400; overflow: hidden; }
+        .gap-overlay { position: absolute; bottom: 0; left: 0; width: 100%; height: 32px; background: var(--y-light); border-top: 2px dashed #d35400; }
+        .filled-item { width: 30px; height: 30px; background: var(--item-v); border-radius: 4px; position: absolute; bottom: 1px; border: 1px solid white; }
         
-        .full-y { width: 100px; height: 100px; background: var(--y-color); border: 4px solid white; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 45px; color: white; font-weight: bold; }
+        .full-y { width: 80px; height: 80px; background: var(--y-color); border: 4px solid white; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 35px; color: white; font-weight: bold; }
         
-        .unit { 
-            width: 40px; height: 40px; background: var(--item-v); border-radius: 6px; color: white; 
-            display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 16px; 
-            user-select: none; -webkit-user-select: none; 
-            touch-action: none; cursor: grab;
+        .unit { width: 38px; height: 38px; background: var(--item-v); border-radius: 6px; color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 16px; cursor: grab; user-select: none; touch-action: none; }
+
+        .control-panel { 
+            display: grid; grid-template-columns: 1.2fr 1fr 1fr; gap: 10px; width: 100%; max-width: 950px; margin-top: 20px; 
+            background: #e1e8eb; padding: 12px; border-radius: 15px;
         }
+        .ctrl-group { background: white; padding: 10px; border-radius: 10px; display: flex; flex-direction: column; gap: 8px; align-items: center; }
+        .ctrl-title { font-size: 13px; font-weight: bold; color: #34495e; }
+        
+        button { padding: 8px; font-size: 14px; border-radius: 6px; border: none; background: var(--main-blue); color: white; font-weight: bold; cursor: pointer; width: 100%; }
+        button.hidden { display: none; }
+        .btn-orange { background: var(--y-color); }
+        .btn-red { background: #e74c3c; }
 
-        .ghost {
-            position: fixed; pointer-events: none; opacity: 0.7; z-index: 10000;
-            width: 40px; height: 40px; background: var(--item-v); border-radius: 6px;
-            color: white; display: flex; align-items: center; justify-content: center; font-weight: bold;
+        .ghost { position: fixed; pointer-events: none; opacity: 0.8; z-index: 10000; width: 38px; height: 38px; background: var(--item-v); border-radius: 6px; color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; }
+
+        .step-row { margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px dashed #eee; width: 100%; }
+        
+        @media (max-width: 768px) {
+            .header { flex-direction: column; align-items: center; }
+            .control-panel { grid-template-columns: 1fr; }
+            #balance-container { min-width: 320px; }
         }
-
-        .controls { margin-top: 30px; display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
-        button { padding: 10px 20px; font-size: 16px; border-radius: 8px; border: none; background: #3498db; color: white; font-weight: bold; cursor: pointer; }
-        .hint { color: #7f8c8d; font-size: 13px; margin-top: 8px; text-align: center; }
     </style>
 </head>
 <body>
 
 <button class="btn-index" onclick="window.location.href='index.html'">返回主頁</button>
 
-<div class="container-wrapper">
-    <div class="math-style" style="background:white; padding:10px 30px; border-radius:50px; margin-bottom:10px; box-shadow:0 2px 10px rgba(0,0,0,0.05)">
-        <div class="left-part">題目：<div class="frac"><span class="top">y</span><span>4</span></div> - 2</div> 
-        <div class="eq-sign">=</div> 
-        <div class="right-part">3</div>
-    </div>
+<div class="math-style" style="background:white; padding:10px 30px; border-radius:50px; margin-bottom:10px; box-shadow:0 2px 10px rgba(0,0,0,0.05)">
+    題目：<div class="frac"><span class="top">y</span><span>4</span></div> - 2 = 3
+</div>
 
-    <div class="header">
-        <div class="main-col">
-            <div id="balance-container">
-                <div id="balance-sign">=</div>
-                <div id="beam">
-                    <div class="pan" id="left-pan" onclick="addCurrentLeft(event)" ondragover="event.preventDefault()" ondrop="handleDropPC(event, 'left')"></div>
-                    <div class="pan" id="right-pan" onclick="addCurrentRight(event)" ondragover="event.preventDefault()" ondrop="handleDropPC(event, 'right')"></div>
+<div class="header">
+    <div class="main-col">
+        <div id="balance-container">
+            <div id="balance-sign">=</div>
+            <div id="beam">
+                <div class="pan" id="left-pan" ondragover="event.preventDefault()" ondrop="handleDropPC(event, 'left')"></div>
+                <div class="pan" id="right-pan" ondragover="event.preventDefault()" ondrop="handleDropPC(event, 'right')"></div>
+            </div>
+        </div>
+
+        <div style="margin-top: 15px; display: flex; gap: 15px; align-items: center; background: white; padding: 10px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+            <span style="font-size:14px;">拖動「1」手動加進天秤：</span>
+            <div class="unit" draggable="true" ondragstart="drag(event)" id="u-source">1</div>
+        </div>
+
+        <div class="control-panel">
+            <div class="ctrl-group">
+                <div class="ctrl-title">針對左邊</div>
+                <button class="btn-red" onclick="changeLeftOnes(-1)">減 1</button>
+                <button onclick="addGapPart()">加 圖案 (<div class="frac" style="font-size:10px; color:white;"><span class="top" style="border-color:white">y</span><span style="color:white">4</span></div>-2)</button>
+                <button id="btn-hide-y4" class="btn-orange hidden" onclick="addFullY4()">加 完整 <div class="frac" style="font-size:11px; color:white; margin-left:3px;"><span class="top" style="border-color:white">y</span><span style="color:white">4</span></div></button>
+            </div>
+
+            <div class="ctrl-group">
+                <div class="ctrl-title">兩邊同時</div>
+                <button onclick="bothAction('add', 1)">兩邊同時 + 1</button>
+                <button onclick="bothAction('mul', 4)">兩邊同時 × 4</button>
+            </div>
+
+            <div class="ctrl-group">
+                <div class="ctrl-title">針對右邊</div>
+                <button class="btn-red" onclick="changeRightOnes(-1)">減 1</button>
+                <div style="display:flex; gap:2px; width:100%;">
+                    <select id="right-num" style="width:50%;"><script>for(let i=1;i<=9;i++)document.write(`<option value="${i}">${i}</option>`)</script></select>
+                    <button style="width:50%" onclick="changeRightOnes(parseInt(document.getElementById('right-num').value))">加</button>
                 </div>
             </div>
-
-            <div style="margin-top: 40px; display: flex; gap: 15px; align-items: center;">
-                <span>拖動「1」：</span>
-                <div class="unit" draggable="true" ondragstart="drag(event)" id="u-source">1</div>
-            </div>
-
-            <div class="controls">
-                <button style="background: #95a5a6;" onclick="location.reload()">重新開始</button>
-            </div>
-            <div class="hint">💡 邏輯：點擊籃子可複製一份當前物件；點擊物件可刪除；拖動「1」手動加減</div>
         </div>
+        <button style="background: #95a5a6; margin-top: 10px; width: 120px;" onclick="location.reload()">重新開始</button>
+    </div>
 
-        <div class="step-col">
-            <h4 style="text-align: center; margin: 0 0 15px 0; color: #7f8c8d;">解方程歷程</h4>
-            <div id="step-area"></div>
-        </div>
+    <div class="step-col">
+        <h4 style="text-align: center; margin: 0 0 10px 0; color: #7f8c8d;">解方程歷程</h4>
+        <div id="step-area"></div>
     </div>
 </div>
 
 <script>
-    let parts = [{ filled: 0 }]; 
-    let extraLeftOnes = 0; 
-    let rightOnes = 3;    
-
-    // 【關鍵修改】：點擊左邊籃子，根據「現在」左邊有的物件複製一份
-    function addCurrentLeft(e) {
-        if (e && e.target !== e.currentTarget) return; 
-        
-        // 複製當前的碎片列表（深拷貝，確保 filled 數值一致）
-        const currentPartsCount = parts.length;
-        for(let i=0; i<currentPartsCount; i++) {
-            parts.push({ filled: parts[i].filled });
-        }
-        
-        // 同時複製額外的「1」
-        extraLeftOnes += extraLeftOnes;
-        
-        render();
-    }
-
-    // 【關鍵修改】：點擊右邊籃子，複製「現在」右邊總數一份
-    function addCurrentRight(e) {
-        if (e && e.target !== e.currentTarget) return;
-        rightOnes += rightOnes;
-        render();
-    }
-
-    function executeAddOne(pan) {
-        if (pan === 'right') { rightOnes++; } 
-        else {
-            // 優先填入現有的碎片，填滿了才加額外的「1」
-            let target = parts.find(p => p.filled < 2);
-            if (target) target.filled++;
-            else extraLeftOnes++;
-        }
-        render();
-    }
+    // 精確初始狀態：左邊 1個 y/4缺口 + 0個額外1 = 右邊 3個1
+    // (邏輯：缺口 y/4 其實代表 y/4 - 2，所以 y/4-2=3 係平衡嘅)
+    let leftParts = [{ filled: 0 }]; 
+    let leftOnes = 0; 
+    let rightOnes = 3;
 
     function drag(ev) { ev.dataTransfer.setData("text", "u"); }
     function handleDropPC(ev, pan) { ev.preventDefault(); executeAddOne(pan); }
 
-    // --- iPad 觸控引擎 ---
-    (function() {
-        const source = document.getElementById('u-source');
-        let ghost = null;
-
-        source.addEventListener('touchstart', function(e) {
-            if (e.touches.length > 1) return;
-            const touch = e.touches[0];
-            ghost = document.createElement('div');
-            ghost.className = 'ghost';
-            ghost.innerText = '1';
-            document.body.appendChild(ghost);
-            updateGhost(touch.pageX, touch.pageY);
-        }, {passive: false});
-
-        document.addEventListener('touchmove', function(e) {
-            if (!ghost) return;
-            const touch = e.touches[0];
-            updateGhost(touch.pageX, touch.pageY);
-            e.preventDefault();
-        }, {passive: false});
-
-        document.addEventListener('touchend', function(e) {
-            if (!ghost) return;
-            const touch = e.changedTouches[0];
-            const leftPan = document.getElementById('left-pan');
-            const rightPan = document.getElementById('right-pan');
-            if (isOver(touch.pageX, touch.pageY, leftPan)) executeAddOne('left');
-            else if (isOver(touch.pageX, touch.pageY, rightPan)) executeAddOne('right');
-            ghost.remove();
-            ghost = null;
-        });
-
-        function updateGhost(x, y) {
-            ghost.style.left = (x - 20) + 'px';
-            ghost.style.top = (y - 20) + 'px';
-        }
-
-        function isOver(x, y, el) {
-            const rect = el.getBoundingClientRect();
-            return x >= (rect.left + window.scrollX) && x <= (rect.right + window.scrollX) && 
-                   y >= (rect.top + window.scrollY) && y <= (rect.bottom + window.scrollY);
-        }
-    })();
-
-    function removeFromLeft(type, index) {
-        if (type === 'extra') extraLeftOnes--;
-        else if (type === 'part') {
-            if (parts[index].filled > 0) parts[index].filled--;
-            else if (parts.length > 1) parts.splice(index, 1);
-            else parts[0].filled = 0; // 剩下最後一個碎片時只清空內容
+    function executeAddOne(pan) {
+        if (pan === 'right') { rightOnes++; } 
+        else {
+            let target = leftParts.find(p => p.filled < 2);
+            if (target) target.filled++;
+            else leftOnes++;
         }
         render();
     }
 
-    function removeFromRight() { if (rightOnes > 0) rightOnes--; render(); }
+    function changeLeftOnes(val) { if(leftOnes + val >= 0) leftOnes += val; render(); }
+    function changeRightOnes(val) { if(rightOnes + val >= 0) rightOnes += val; render(); }
+    function addGapPart() { leftParts.push({ filled: 0 }); render(); }
+    function addFullY4() { leftParts.push({ filled: 2 }); render(); }
+
+    function bothAction(type, val) {
+        if (type === 'add') {
+            executeAddOne('left'); executeAddOne('right');
+        } else if (type === 'mul') {
+            leftOnes *= 4; rightOnes *= 4;
+            let len = leftParts.length;
+            for(let i=0; i<3; i++) {
+                for(let j=0; j<len; j++) leftParts.push({ filled: leftParts[j].filled });
+            }
+        }
+        render();
+    }
+
+    // iPad 觸控拖放引擎
+    (function() {
+        const source = document.getElementById('u-source');
+        let ghost = null;
+        source.addEventListener('touchstart', (e) => {
+            const touch = e.touches[0];
+            ghost = document.createElement('div');
+            ghost.className = 'ghost'; ghost.innerText = '1';
+            document.body.appendChild(ghost);
+            updateGhost(touch.pageX, touch.pageY);
+        });
+        document.addEventListener('touchmove', (e) => {
+            if (!ghost) return;
+            updateGhost(e.touches[0].pageX, e.touches[0].pageY);
+            e.preventDefault();
+        }, {passive: false});
+        document.addEventListener('touchend', (e) => {
+            if (!ghost) return;
+            const touch = e.changedTouches[0];
+            const lPan = document.getElementById('left-pan').getBoundingClientRect();
+            const rPan = document.getElementById('right-pan').getBoundingClientRect();
+            if (touch.pageX > lPan.left && touch.pageX < lPan.right && touch.pageY > lPan.top && touch.pageY < lPan.bottom) executeAddOne('left');
+            else if (touch.pageX > rPan.left && touch.pageX < rPan.right && touch.pageY > rPan.top && touch.pageY < rPan.bottom) executeAddOne('right');
+            ghost.remove(); ghost = null;
+        });
+        function updateGhost(x, y) { ghost.style.left = (x-19)+'px'; ghost.style.top = (y-19)+'px'; }
+    })();
 
     function render() {
-        const leftPan = document.getElementById('left-pan');
-        const rightPan = document.getElementById('right-pan');
-        leftPan.innerHTML = ''; rightPan.innerHTML = '';
+        const lp = document.getElementById('left-pan');
+        const rp = document.getElementById('right-pan');
+        lp.innerHTML = ''; rp.innerHTML = '';
 
-        const completes = parts.filter(p => p.filled >= 2).length;
-        const fullYCount = Math.floor(completes / 4); 
-        
-        for(let i=0; i<fullYCount; i++) {
-            const y = document.createElement('div');
-            y.className = 'full-y'; y.innerText = 'Y';
-            y.onclick = (e) => { 
-                e.stopPropagation(); 
-                let count = 0;
-                for(let j = parts.length-1; j>=0; j--) {
-                    if(parts[j].filled >= 2 && count < 4) {
-                        parts.splice(j, 1);
-                        count++;
-                    }
-                }
-                if(parts.length === 0) parts.push({filled: 0});
-                render();
-            }; 
-            leftPan.appendChild(y);
+        // 隱藏掣邏輯：當有任何一塊填滿咗 2 個 1，就顯示加 y/4 掣
+        const canAddFull = leftParts.some(p => p.filled >= 2);
+        document.getElementById('btn-hide-y4').classList.toggle('hidden', !canAddFull);
+
+        // 渲染左邊
+        const completes = leftParts.filter(p => p.filled >= 2).length;
+        const bigY = Math.floor(completes / 4);
+        for(let i=0; i<bigY; i++) {
+            let d = document.createElement('div'); d.className = 'full-y'; d.innerText = 'Y';
+            d.onclick = () => { /* 邏輯刪除 */ }; lp.appendChild(d);
         }
-
-        let skipFilledCount = fullYCount * 4; 
-        parts.forEach((p, idx) => {
-            if (p.filled >= 2 && skipFilledCount > 0) {
-                skipFilledCount--;
-                return; 
-            }
-            const div = document.createElement('div');
+        let skip = bigY * 4;
+        leftParts.forEach((p, idx) => {
+            if(p.filled >= 2 && skip > 0) { skip--; return; }
+            let div = document.createElement('div');
             div.className = 'block-y-part';
-            div.onclick = (e) => { e.stopPropagation(); removeFromLeft('part', idx); };
-            div.innerHTML = `<span style="color:white; font-size:12px; margin:4px; font-weight:bold; position:relative; z-index:2">y/4</span><div class="gap-overlay"></div>`;
+            div.innerHTML = `<span style="color:white; font-size:11px; margin:4px; font-weight:bold; position:relative; z-index:2">y/4</span><div class="gap-overlay"></div>`;
             for(let i=0; i<p.filled; i++) {
-                const item = document.createElement('div');
-                item.className = 'filled-item';
-                item.style.left = (i * 34 + 2) + 'px';
+                let item = document.createElement('div');
+                item.className = 'filled-item'; item.style.left = (i*32+2)+'px';
                 div.appendChild(item);
             }
-            leftPan.appendChild(div);
+            div.onclick = () => { leftParts.splice(idx, 1); render(); };
+            lp.appendChild(div);
         });
-
-        for(let i=0; i<extraLeftOnes; i++) {
-            const u = document.createElement('div');
-            u.className = 'unit'; u.innerText = '1';
-            u.onclick = (e) => { e.stopPropagation(); removeFromLeft('extra'); };
-            leftPan.appendChild(u);
+        for(let i=0; i<leftOnes; i++) {
+            let u = document.createElement('div'); u.className = 'unit'; u.innerText = '1';
+            u.onclick = () => { leftOnes--; render(); }; lp.appendChild(u);
         }
+
+        // 渲染右邊
         for(let i=0; i<rightOnes; i++) {
-            const u = document.createElement('div');
-            u.className = 'unit'; u.innerText = '1';
-            u.onclick = (e) => { e.stopPropagation(); removeFromRight(); };
-            rightPan.appendChild(u);
+            let u = document.createElement('div'); u.className = 'unit'; u.innerText = '1';
+            u.onclick = () => { rightOnes--; render(); }; rp.appendChild(u);
         }
         updateLogic();
     }
@@ -290,22 +235,25 @@
         const container = document.getElementById('balance-container');
         const area = document.getElementById('step-area');
         
-        let leftVal = parts.length * 3 + parts.reduce((s, p) => s + p.filled, 0) + extraLeftOnes;
+        // 核心運算：一個缺口組件價值 3，一塊填滿的 y/4 價值 5
+        let leftVal = leftParts.reduce((acc, p) => acc + (p.filled >= 2 ? 5 : 3), 0) + leftOnes;
         let diff = rightOnes - leftVal;
         
-        container.style.transform = `rotate(${Math.max(-15, Math.min(15, diff * 3))}deg)`;
+        container.style.transform = `rotate(${Math.max(-15, Math.min(15, diff * 5))}deg)`;
         
         if (Math.abs(diff) < 0.1) {
             sign.innerText = "="; sign.style.color = "#2ecc71";
-            let html = `<div class="step-row math-style"><div class="left-part"><div class="frac"><span class="top">y</span><span>4</span></div> - 2</div><div class="eq-sign">=</div><div class="right-part">3</div></div>`;
+            let html = `<div class="step-row math-style"><div><div class="frac"><span class="top">y</span><span>4</span></div> - 2</div><div> = 3</div></div>`;
             
-            if (parts.length > 0 && parts[0].filled >= 2) {
-                html += `<div class="step-row math-style"><div class="left-part"><div class="frac"><span class="top">y</span><span>4</span></div> - 2 + 2</div><div class="eq-sign">=</div><div class="right-part">3 + 2</div></div>`;
-                html += `<div class="step-row math-style"><div class="left-part"><div class="frac"><span class="top">y</span><span>4</span></div></div><div class="eq-sign">=</div><div class="right-part">5</div></div>`;
+            // 步驟 1: 填滿缺口 (等效於 +2)
+            if (leftParts.some(p => p.filled >= 2)) {
+                html += `<div class="step-row math-style"><div><div class="frac"><span class="top">y</span><span>4</span></div> - 2 + 2</div><div> = 3 + 2</div></div>`;
+                html += `<div class="step-row math-style"><div><div class="frac"><span class="top">y</span><span>4</span></div></div><div> = 5</div></div>`;
             }
-            if (parts.length >= 4 && parts.every(p => p.filled >= 2)) {
-                html += `<div class="step-row math-style"><div class="left-part"><div class="frac"><span class="top">y</span><span>4</span></div> × 4</div><div class="eq-sign">=</div><div class="right-part">5 × 4</div></div>`;
-                html += `<div class="step-row math-style" style="color:var(--y-color); font-size:30px;"><div class="left-part">y</div><div class="eq-sign">=</div><div class="right-part">20</div></div>`;
+            // 步驟 2: 乘以 4 (變成 Y)
+            if (leftParts.length >= 4 && leftParts.every(p => p.filled >= 2)) {
+                html += `<div class="step-row math-style"><div><div class="frac"><span class="top">y</span><span>4</span></div> × 4</div><div> = 5 × 4</div></div>`;
+                html += `<div class="step-row math-style" style="color:var(--y-color); font-size:32px;">y = 20</div>`;
             }
             area.innerHTML = html;
         } else {
