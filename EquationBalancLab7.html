@@ -2,37 +2,78 @@
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>兩步方程：自由探索工具</title>
     <style>
         :root { --main-color: #3498db; --success-color: #2ecc71; --error-color: #e74c3c; --y-color: #f39c12; --item-v: #9b59b6; }
-        body { font-family: "Microsoft JhengHei", sans-serif; background: #f0f2f5; display: flex; flex-direction: column; align-items: center; padding: 20px; overflow-x: hidden; position: relative; touch-action: manipulation; }
+        
+        /* 修正 1：允許上下捲動，並確保內容有足夠空間 */
+        body { 
+            font-family: "Microsoft JhengHei", sans-serif; 
+            background: #f0f2f5; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            padding: 20px; 
+            margin: 0;
+            min-height: 100vh;
+            overflow-y: auto; /* 強制開啟上下捲動 */
+            overflow-x: hidden; 
+            position: relative; 
+            touch-action: auto; /* 恢復 iPad 正常手勢操作 */
+        }
 
-        /* 已修改：將 Index 按鈕移至右上角，並保持固定位置 */
         .index-btn { 
             position: fixed; 
-            top: 20px; 
-            right: 20px; 
-            padding: 10px 20px; 
+            top: 10px; 
+            right: 10px; 
+            padding: 8px 16px; 
             background: #34495e; 
             color: white; 
             border: none; 
             border-radius: 8px; 
             font-weight: bold; 
             cursor: pointer; 
-            z-index: 1000; 
+            z-index: 2000; 
             text-decoration: none; 
-            font-size: 16px; 
+            font-size: 14px; 
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
-        .index-btn:hover { background: #2c3e50; }
 
-        .header-title { background: #2c3e50; color: white; padding: 15px 40px; border-radius: 10px; margin-bottom: 20px; font-size: 28px; font-weight: bold; display: flex; align-items: center; gap: 10px; }
+        .header-title { background: #2c3e50; color: white; padding: 10px 25px; border-radius: 10px; margin-bottom: 20px; font-size: 24px; font-weight: bold; display: flex; align-items: center; gap: 10px; text-align: center; }
 
-        .layout-container { display: flex; width: 100%; max-width: 1200px; gap: 30px; align-items: flex-start; }
-        .main-game { flex: 2; display: flex; flex-direction: column; align-items: center; }
+        /* 修正 2：響應式容器 - 在細螢幕上自動縮小 */
+        .layout-container { 
+            display: flex; 
+            width: 100%; 
+            max-width: 1200px; 
+            gap: 20px; 
+            align-items: flex-start; 
+            transform-origin: top center; 
+        }
+
+        /* 針對 iPad 或細畫面進行整體縮放 */
+        @media (max-width: 1100px) {
+            .layout-container { 
+                flex-direction: column; 
+                align-items: center;
+                transform: scale(0.9);
+            }
+            .step-sidebar { width: 95%; max-width: 500px; }
+        }
+
+        @media (max-width: 768px) {
+            .layout-container { transform: scale(0.8); }
+            .header-title { font-size: 20px; }
+        }
+
+        @media (max-width: 480px) {
+            .layout-container { transform: scale(0.6); }
+        }
+
+        .main-game { flex: 2; display: flex; flex-direction: column; align-items: center; width: 100%; }
         
-        .eq-panel { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 100%; margin-bottom: 15px; }
+        .eq-panel { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 100%; max-width: 600px; margin-bottom: 15px; }
         .eq-line { display: flex; align-items: center; justify-content: center; font-size: 32px; font-weight: bold; height: 60px; }
         .side-display { flex: 1; display: flex; justify-content: center; align-items: center; }
         .frac { display: inline-flex; flex-direction: column; align-items: center; vertical-align: middle; line-height: 1; font-size: 32px; }
@@ -40,16 +81,7 @@
 
         .step-sidebar { flex: 1.5; background: #fff; border: 3px solid var(--success-color); border-radius: 20px; padding: 25px; 
                          display: none; box-shadow: 0 10px 30px rgba(46, 204, 113, 0.2); animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-        @keyframes popIn { from { opacity: 0; transform: scale(0.8); } to { opacity: 1; transform: scale(1); } }
         
-        .step-table { width: 100%; font-size: 22px; font-weight: bold; border-collapse: collapse; }
-        .step-table td { padding: 8px 0; }
-        .td-r { text-align: right; width: 48%; }
-        .td-c { text-align: center; width: 4%; color: #bdc3c7; }
-        .td-l { text-align: left; width: 48%; }
-        .highlight { color: var(--y-color); font-size: 30px; }
-        .process-row { color: #e74c3c; font-size: 18px; }
-
         #stage { position: relative; width: 100%; height: 380px; display: flex; justify-content: center; margin-top: 20px; }
         .beam-wrap { position: absolute; top: 60px; width: 560px; transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
         .beam { width: 100%; height: 12px; background: #bdc3c7; border-radius: 6px; display: flex; justify-content: space-between; }
@@ -60,10 +92,20 @@
         .item-y-full { width: 100%; background: var(--y-color); border: 3px solid white; box-shadow: 0 4px 0 #d35400; font-size: 24px; }
         .item-v { width: 45px; background: var(--item-v); font-size: 20px; }
 
-        .controls { display: flex; gap: 15px; margin: 25px 0; }
-        button { padding: 12px 24px; border-radius: 12px; border: none; background: var(--main-color); color: white; font-weight: bold; cursor: pointer; font-size: 18px; box-shadow: 0 4px 0 #2980b9; }
+        .controls { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin: 25px 0; width: 100%; }
+        button { padding: 12px 20px; border-radius: 12px; border: none; background: var(--main-color); color: white; font-weight: bold; cursor: pointer; font-size: 16px; box-shadow: 0 4px 0 #2980b9; }
         button.reset { background: #95a5a6; box-shadow: 0 4px 0 #7f8c8d; }
         button.next { background: #e67e22; box-shadow: 0 4px 0 #d35400; }
+
+        .step-table { width: 100%; font-size: 22px; font-weight: bold; border-collapse: collapse; }
+        .step-table td { padding: 8px 0; }
+        .td-r { text-align: right; width: 48%; }
+        .td-c { text-align: center; width: 4%; color: #bdc3c7; }
+        .td-l { text-align: left; width: 48%; }
+        .highlight { color: var(--y-color); font-size: 30px; }
+        .process-row { color: #e74c3c; font-size: 18px; }
+
+        @keyframes popIn { from { opacity: 0; transform: scale(0.8); } to { opacity: 1; transform: scale(1); } }
     </style>
 </head>
 <body>
@@ -93,7 +135,7 @@
         </div>
 
         <div class="controls">
-            <button onclick="addFullSet()">複製整份題目內容 (+1份)</button>
+            <button onclick="addFullSet()">複製整份內容 (+1份)</button>
             <button class="reset" onclick="resetLevel()">重置題目</button>
             <button class="next" onclick="nextLevel()">下一題</button>
         </div>
@@ -106,9 +148,10 @@
 </div>
 
 <script>
-    // iPad 觸控支援腳本：將觸控動作轉化為滑鼠點擊
+    // 觸控支援保持不變
     (function() {
         function touchHandler(event) {
+            if (event.touches.length > 1) return; // 允許多指縮放頁面
             var touches = event.changedTouches, first = touches[0], type = "";
             switch(event.type) {
                 case "touchstart": type = "mousedown"; break;
@@ -126,25 +169,20 @@
         document.addEventListener("touchcancel", touchHandler, true);
     })();
 
+    // 遊戲數據邏輯（完全保持原本設定）
     const levels = [
         { y_div: 3, add_v: 1, target_r: 6 },
         { y_div: 4, add_v: 2, target_r: 5 },
         { y_div: 2, add_v: 3, target_r: 7 }
     ];
     let currentLevel = 0;
-
-    let state = {
-        partsL: 0, 
-        onesL: 0,  
-        onesR: 0   
-    };
+    let state = { partsL: 0, onesL: 0, onesR: 0 };
 
     function initLevel() {
         const lv = levels[currentLevel];
         state.partsL = 1; 
         state.onesL = lv.add_v;
         state.onesR = lv.target_r;
-        
         document.getElementById('sidebar').style.display = 'none';
         document.getElementById('level-title').innerHTML = `探索題目：<div class="frac"><span class="top">y</span><span>${lv.y_div}</span></div> + ${lv.add_v} = ${lv.target_r}`;
         update();
@@ -154,7 +192,6 @@
         const lv = levels[currentLevel];
         const bL = document.getElementById('basket-L');
         const bR = document.getElementById('basket-R');
-        
         const fullY = Math.floor(state.partsL / lv.y_div);
         const remParts = state.partsL % lv.y_div;
 
@@ -183,7 +220,6 @@
         const y_val = (lv.target_r - lv.add_v) * lv.y_div;
         const currentTotalL = (state.partsL * (y_val / lv.y_div)) + state.onesL;
         const currentTotalR = state.onesR;
-        
         const angle = Math.min(20, Math.max(-20, (currentTotalR - currentTotalL) * 10));
         document.getElementById('beam').style.transform = `rotate(${angle}deg)`;
 
@@ -204,32 +240,11 @@
         const midVal = lv.target_r - lv.add_v;
         const table = document.getElementById('summary-table');
         table.innerHTML = `
-            <tr>
-                <td class="td-r"><div class="frac"><span class="top">y</span><span>${lv.y_div}</span></div> + ${lv.add_v}</td>
-                <td class="td-c">=</td>
-                <td class="td-l">${lv.target_r}</td>
-            </tr>
-            <tr class="process-row">
-                <td class="td-r"><div class="frac"><span class="top">y</span><span>${lv.y_div}</span></div> + ${lv.add_v} - ${lv.add_v}</td>
-                <td class="td-c">=</td>
-                <td class="td-l">${lv.target_r} - ${lv.add_v}</td>
-            </tr>
-            <tr>
-                <td class="td-r"><div class="frac"><span class="top">y</span><span>${lv.y_div}</span></div></td>
-                <td class="td-c">=</td>
-                <td class="td-l">${midVal}</td>
-            </tr>
-            <tr class="process-row" style="color: #3498db;">
-                <td class="td-r">(<div class="frac"><span class="top">y</span><span>${lv.y_div}</span></div>) × ${lv.y_div}</td>
-                <td class="td-c">=</td>
-                <td class="td-l">${midVal} × ${lv.y_div}</td>
-            </tr>
-            <tr class="highlight">
-                <td class="td-r">y</td>
-                <td class="td-c">=</td>
-                <td class="td-l">${ans}</td>
-            </tr>
-        `;
+            <tr><td class="td-r"><div class="frac"><span class="top">y</span><span>${lv.y_div}</span></div> + ${lv.add_v}</td><td class="td-c">=</td><td class="td-l">${lv.target_r}</td></tr>
+            <tr class="process-row"><td class="td-r"><div class="frac"><span class="top">y</span><span>${lv.y_div}</span></div> + ${lv.add_v} - ${lv.add_v}</td><td class="td-c">=</td><td class="td-l">${lv.target_r} - ${lv.add_v}</td></tr>
+            <tr><td class="td-r"><div class="frac"><span class="top">y</span><span>${lv.y_div}</span></div></td><td class="td-c">=</td><td class="td-l">${midVal}</td></tr>
+            <tr class="process-row" style="color: #3498db;"><td class="td-r">(<div class="frac"><span class="top">y</span><span>${lv.y_div}</span></div>) × ${lv.y_div}</td><td class="td-c">=</td><td class="td-l">${midVal} × ${lv.y_div}</td></tr>
+            <tr class="highlight"><td class="td-r">y</td><td class="td-c">=</td><td class="td-l">${ans}</td></tr>`;
     }
 
     function removeItem(type) {
@@ -248,15 +263,8 @@
         update();
     }
 
-    function nextLevel() {
-        currentLevel = (currentLevel + 1) % levels.length;
-        initLevel();
-    }
-
-    function resetLevel() {
-        initLevel();
-    }
-
+    function nextLevel() { currentLevel = (currentLevel + 1) % levels.length; initLevel(); }
+    function resetLevel() { initLevel(); }
     initLevel();
 </script>
 </body>
