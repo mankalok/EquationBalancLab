@@ -6,23 +6,59 @@
     <title>互動天秤：加法對齊版</title>
     <style>
         :root { --main-color: #3498db; --right-color: #9b59b6; --success-color: #2ecc71; --warn-color: #e67e22; }
-        body { font-family: sans-serif; background: #f0f2f5; display: flex; flex-direction: column; align-items: center; margin: 0; padding: 20px; touch-action: none; overflow-x: hidden; position: relative; }
         
-        /* Index 掣搬到右上角 */
+        /* 修改：移除 touch-action: none，允許頁面捲動 */
+        body { 
+            font-family: sans-serif; 
+            background: #f0f2f5; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            margin: 0; 
+            padding: 20px; 
+            overflow-x: hidden; 
+            position: relative;
+            min-height: 100vh; /* 確保有足夠高度捲動 */
+        }
+        
+        /* Index 掣 */
         .index-btn { position: absolute; top: 15px; right: 15px; padding: 10px 18px; background: #34495e; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; z-index: 100; }
 
         /* 算式區 */
-        .eq-container { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); width: 95%; max-width: 450px; margin-bottom: 20px; }
-        .eq-line { display: flex; align-items: center; font-size: 28px; font-weight: bold; margin: 8px 0; min-height: 40px; }
-        .side-l { width: 180px; text-align: right; }
-        .side-c { width: 60px; text-align: center; color: #7f8c8d; }
-        .side-r { width: 180px; text-align: left; }
+        .eq-container { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); width: 95%; max-width: 450px; margin-bottom: 20px; box-sizing: border-box; }
+        .eq-line { display: flex; align-items: center; font-size: 28px; font-weight: bold; margin: 8px 0; min-height: 40px; justify-content: center; }
+        .side-l { flex: 1; text-align: right; }
+        .side-c { width: 50px; text-align: center; color: #7f8c8d; }
+        .side-r { flex: 1; text-align: left; }
         
         .title-text { font-size: 14px; color: #95a5a6; text-align: center; margin-bottom: 10px; width: 100%; }
         .minus { color: #e74c3c; } 
 
-        /* 天秤世界 */
-        #balance-world { position: relative; width: 500px; height: 320px; display: flex; justify-content: center; margin-bottom: 20px; }
+        /* 天秤世界 - 修改：增加自適應支援 */
+        #balance-world { 
+            position: relative; 
+            width: 500px; 
+            height: 320px; 
+            display: flex; 
+            justify-content: center; 
+            margin-bottom: 20px;
+            flex-shrink: 0; /* 防止被擠壓 */
+        }
+
+        /* 針對小螢幕進行縮放 */
+        @media (max-width: 520px) {
+            #balance-world {
+                transform: scale(0.8); /* 螢幕太窄時自動縮小天秤 */
+                margin: -30px 0; /* 補償縮放後的空白 */
+            }
+        }
+        @media (max-width: 400px) {
+            #balance-world {
+                transform: scale(0.65);
+                margin: -50px 0;
+            }
+        }
+
         #base { position: absolute; bottom: 0; width: 180px; height: 18px; background: #7f8c8d; border-radius: 10px; z-index: 1; }
         #pillar { position: absolute; bottom: 18px; width: 14px; height: 160px; background: #95a5a6; }
         
@@ -30,23 +66,36 @@
         #beam { width: 100%; height: 10px; background: #bdc3c7; border-radius: 5px; display: flex; justify-content: space-between; transition: transform 0.4s; transform-origin: center; }
 
         .pan-wrap { width: 140px; display: flex; flex-direction: column; align-items: center; transition: transform 0.4s; transform-origin: top center; margin-top: 10px; }
-        
         .pan { width: 140px; height: 15px; background: #34495e; border-radius: 4px; position: relative; }
         .pan::after { content: ""; position: absolute; top: 15px; left: 10px; width: 120px; height: 20px; background: #34495e; border-radius: 0 0 40px 40px; opacity: 0.8; }
-        
         .pan-content { width: 140px; min-height: 100px; display: flex; flex-wrap: wrap-reverse; justify-content: center; align-content: flex-start; gap: 5px; padding-bottom: 2px; }
 
-        /* 砝碼 */
-        .item { width: 36px; height: 36px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-weight: bold; color: white; cursor: grab; touch-action: none; user-select: none; z-index: 10; position: relative; }
+        /* 砝碼 - 修改：這裡一定要保留 touch-action: none 確保拖動順暢 */
+        .item { 
+            width: 36px; 
+            height: 36px; 
+            border-radius: 6px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            font-weight: bold; 
+            color: white; 
+            cursor: grab; 
+            touch-action: none; /* 關鍵：拖動時禁止頁面捲動 */
+            user-select: none; 
+            -webkit-user-select: none;
+            z-index: 10; 
+            position: relative; 
+        }
         .item-y { background: var(--warn-color); width: 44px; height: 44px; font-size: 20px; }
         .item-left { background: var(--main-color); }
         .item-right { background: var(--right-color); }
 
-        .trash-bin { width: 90%; max-width: 450px; min-height: 85px; background: #e0e4e8; border: 3px dashed #bdc3c7; border-radius: 15px; margin-top: 10px; display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 8px; color: #7f8c8d; font-weight: bold; }
+        .trash-bin { width: 90%; max-width: 450px; min-height: 85px; background: #e0e4e8; border: 3px dashed #bdc3c7; border-radius: 15px; margin-top: 10px; display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 8px; color: #7f8c8d; font-weight: bold; padding: 10px; box-sizing: border-box; }
         
-        .btns { margin-top: 15px; }
+        .btns { margin-top: 15px; margin-bottom: 20px; }
         button { padding: 12px 24px; border: none; border-radius: 10px; background: var(--main-color); color: white; font-weight: bold; cursor: pointer; font-size: 16px; }
-        #msg { height: 30px; font-weight: bold; margin-top: 10px; font-size: 18px; text-align: center; }
+        #msg { height: 30px; font-weight: bold; margin-top: 10px; font-size: 18px; text-align: center; margin-bottom: 30px; }
     </style>
 </head>
 <body>
@@ -203,7 +252,6 @@
         document.getElementById('beam').style.transform = `rotate(${angle}deg)`;
         document.querySelectorAll('.pan-wrap').forEach(p => p.style.transform = `rotate(${-angle}deg)`);
 
-        // --- 動態符號邏輯開始 ---
         let opSym = "=";
         let opColor = "#7f8c8d";
         if (lW > rW) {
@@ -220,7 +268,6 @@
         const mOp = document.getElementById('m-op');
         mOp.innerText = opSym;
         mOp.style.color = opColor;
-        // --- 動態符號邏輯結束 ---
 
         document.getElementById('m-left').innerHTML = `${level.eqL}${remL > 0 ? ` <span class="minus"> - ${remL}</span>` : ''}`;
         document.getElementById('m-right').innerHTML = `${level.eqR}${remR > 0 ? ` <span class="minus"> - ${remR}</span>` : ''}`;
